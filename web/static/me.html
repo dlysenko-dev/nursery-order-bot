@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F3EEE1">
+<title>Мои клиенты — Питомник</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script async src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --cream:#F3EEE1;
+  --cream-2:#EBE4D1;
+  --ink:#0B3B17;
+  --ink-60:rgba(11,59,23,.6);
+  --ink-40:rgba(11,59,23,.4);
+  --coral:#E14B63;
+  --coral-deep:#BC2F47;
+  --line:rgba(11,59,23,.16);
+  --serif:'Cormorant',Georgia,serif;
+  --sans:'Manrope',-apple-system,'Segoe UI',sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --tg-safe:var(--tg-content-safe-area-inset-top,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:var(--sans);background:var(--cream);color:var(--ink);
+  font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+.head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(14px + var(--sat) + var(--tg-safe)) 20px 14px;
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em;font-size:15px}
+.brand svg{width:26px;height:26px;flex:none}
+.back{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-40);transition:color .3s}
+.back:hover{color:var(--ink)}
+
+.wrap{max-width:620px;margin:0 auto;padding:40px 20px calc(48px + var(--sab))}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,8vw,52px);line-height:1.05;letter-spacing:-.01em;margin-bottom:6px}
+h1 em{font-style:italic;color:var(--coral)}
+.sub{color:var(--ink-60);font-size:14px;margin-bottom:36px}
+
+.sec-title{
+  font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--ink-40);margin:34px 0 12px;
+}
+
+.link-row{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:14px 0;border-top:1px solid var(--line);
+}
+.link-row:last-of-type{border-bottom:1px solid var(--line)}
+.link-row__label{font-weight:700;font-size:14px}
+.link-row__url{font-size:12px;color:var(--ink-40);word-break:break-all;margin-top:2px}
+.copy-btn{
+  flex:none;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:10px 18px;border:1px solid var(--ink-40);border-radius:100px;
+  transition:background .3s,color .3s,border-color .3s;
+}
+.copy-btn:hover{background:var(--coral);border-color:var(--coral);color:var(--cream)}
+.copy-btn.is-ok{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stat{padding:18px 14px;text-align:center}
+.stat + .stat{border-left:1px solid var(--line)}
+.stat b{display:block;font-family:var(--serif);font-weight:600;font-size:clamp(22px,6vw,32px);font-variant-numeric:tabular-nums}
+.stat span{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-40)}
+
+.client{padding:14px 0;border-top:1px solid var(--line)}
+.client:last-child{border-bottom:1px solid var(--line)}
+.client__top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.client__name{font-family:var(--serif);font-weight:600;font-size:19px}
+.client__sum{font-family:var(--serif);font-weight:600;font-size:18px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.client__meta{font-size:12px;color:var(--ink-40);margin-top:3px}
+
+.stub{text-align:center;padding:80px 0}
+.stub .big{font-family:var(--serif);font-style:italic;font-size:28px;margin-bottom:10px}
+.stub p{color:var(--ink-40);font-size:14px;max-width:340px;margin:0 auto}
+
+#toast{
+  position:fixed;left:50%;bottom:calc(28px + var(--sab));z-index:50;
+  transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--cream);font-size:13px;font-weight:600;
+  padding:12px 22px;border-radius:100px;
+  transition:transform .4s var(--ease),opacity .4s;
+}
+#toast.is-show{transform:translate(-50%,0);opacity:1}
+</style>
+</head>
+<body>
+<header class="head">
+  <a class="brand" href="/">
+    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M24 44C24 44 8 34 8 20C8 11 15 4 24 4C33 4 40 11 40 20C40 34 24 44 24 44Z" stroke="currentColor" stroke-width="2.4"/>
+      <path d="M24 44V14M24 22C24 22 19 20 17 15M24 28C24 28 30 26 32 19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    Питомник
+  </a>
+  <a class="back" href="/">← на сайт</a>
+</header>
+
+<main class="wrap">
+  <div id="content"></div>
+  <div class="stub" id="stub" hidden>
+    <div class="big">Раздел доступен сотрудникам</div>
+    <p>Откройте эту страницу в Telegram из аккаунта сотрудника питомника.</p>
+  </div>
+</main>
+
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var tg = null, tries = 0;
+var content = document.getElementById('content');
+var stub = document.getElementById('stub');
+var toastEl = document.getElementById('toast'), toastTimer = null;
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('is-show'); }, 2200);
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function fmt(n){ return Number(n || 0).toLocaleString('ru-RU') + ' ₽'; }
+function plural(n, one, few, many){
+  var m = Math.abs(n) % 100, d = m % 10;
+  if (m > 10 && m < 20) return many;
+  if (d > 1 && d < 5) return few;
+  if (d === 1) return one;
+  return many;
+}
+function copyText(text, btn){
+  function done(){
+    toast('Ссылка скопирована');
+    if (btn) {
+      btn.classList.add('is-ok');
+      btn.textContent = 'Готово';
+      setTimeout(function(){ btn.classList.remove('is-ok'); btn.textContent = 'Копировать'; }, 1500);
+    }
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function(){ legacy(); done(); });
+  } else { legacy(); done(); }
+  function legacy(){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+function showStub(){
+  content.innerHTML = '';
+  stub.hidden = false;
+}
+
+var LINK_LABELS = {bot: 'Бот', miniapp: 'Мини-апп', site: 'Сайт'};
+
+function render(d){
+  var html = '<h1>' + esc(d.name) + ' — <em>мои клиенты</em></h1>' +
+    '<p class="sub">Ваш код: <b>' + esc(d.ref_code) + '</b>. Делитесь ссылками — заказы по ним привяжутся к вам.</p>';
+
+  html += '<div class="sec-title">Реферальные ссылки</div>';
+  Object.keys(LINK_LABELS).forEach(function(k){
+    if (!d.links || !d.links[k]) return;
+    html += '<div class="link-row"><div><div class="link-row__label">' + LINK_LABELS[k] + '</div>' +
+      '<div class="link-row__url">' + esc(d.links[k]) + '</div></div>' +
+      '<button class="copy-btn" data-copy="' + esc(d.links[k]) + '">Копировать</button></div>';
+  });
+
+  var t = d.totals || {clients: 0, orders: 0, sum: 0};
+  html += '<div class="sec-title">Сводка</div>' +
+    '<div class="stats">' +
+    '<div class="stat"><b>' + t.clients + '</b><span>клиентов</span></div>' +
+    '<div class="stat"><b>' + t.orders + '</b><span>заказов</span></div>' +
+    '<div class="stat"><b>' + fmt(t.sum) + '</b><span>на сумму</span></div>' +
+    '</div>';
+
+  html += '<div class="sec-title">Клиенты</div>';
+  if (d.clients && d.clients.length) {
+    d.clients.forEach(function(c){
+      html += '<div class="client"><div class="client__top">' +
+        '<span class="client__name">' + esc(c.full_name) + '</span>' +
+        '<span class="client__sum">' + fmt(c.orders_sum) + '</span></div>' +
+        '<div class="client__meta">' + esc(c.phone || 'без телефона') +
+        ' · ' + c.orders_count + ' ' + plural(c.orders_count, 'заказ', 'заказа', 'заказов') +
+        (c.created_at ? ' · с ' + esc(c.created_at) : '') + '</div></div>';
+    });
+  } else {
+    html += '<p class="sub">Пока пусто — поделитесь своей ссылкой.</p>';
+  }
+  content.innerHTML = html;
+}
+
+function load(){
+  if (!(window.Telegram && window.Telegram.WebApp)) {
+    if (++tries < 15) { setTimeout(load, 200); return; }
+    showStub();
+    return;
+  }
+  tg = window.Telegram.WebApp;
+  try { tg.ready(); tg.expand(); } catch(e){}
+  if (!tg.initData) { showStub(); return; }
+  fetch('/api/employee/stats?init_data=' + encodeURIComponent(tg.initData))
+    .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(render)
+    .catch(showStub);
+}
+load();
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('[data-copy]');
+  if (btn) copyText(btn.getAttribute('data-copy'), btn);
+});
+})();
+</script>
+</body>
+</html>

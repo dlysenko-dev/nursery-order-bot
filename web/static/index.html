@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#F3EEE1">
+<title>Питомник — многолетние растения с доставкой по России</title>
+<meta name="description" content="Саженцы и луковицы из нашего сада: пионы, лилии, флоксы, хосты, гортензии, хризантемы, декоративный лук. Заказ через Telegram-бот.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script async src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --cream:#F3EEE1;
+  --cream-2:#EBE4D1;
+  --ink:#0B3B17;
+  --ink-60:rgba(11,59,23,.6);
+  --ink-40:rgba(11,59,23,.4);
+  --ink-14:rgba(11,59,23,.14);
+  --coral:#E14B63;
+  --coral-deep:#BC2F47;
+  --purple:#7C5CA8;
+  --line:rgba(11,59,23,.16);
+  --serif:'Cormorant',Georgia,serif;
+  --sans:'Manrope',-apple-system,'Segoe UI',sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+  --tg-safe:var(--tg-content-safe-area-inset-top,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:auto}
+html.lenis,html.lenis body{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto!important}
+body{
+  font-family:var(--sans);
+  background:var(--cream);
+  color:var(--ink);
+  font-size:16px;
+  line-height:1.55;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--coral);color:var(--cream)}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+/* ============ PRELOADER ============ */
+#preloader{
+  position:fixed;inset:0;z-index:200;
+  background:var(--ink);color:var(--cream);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:24px;
+}
+#preloader .leaf{width:56px;height:56px}
+#preloader .leaf path{
+  stroke:var(--cream);stroke-width:1.4;fill:none;
+  stroke-dasharray:300;stroke-dashoffset:300;
+}
+#pre-count{
+  font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:clamp(48px,12vw,88px);line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+#preloader .pre-label{
+  font-size:11px;letter-spacing:.34em;text-transform:uppercase;opacity:.55;
+}
+
+/* ============ CURSOR ============ */
+#cursor{
+  position:fixed;top:0;left:0;z-index:150;pointer-events:none;
+  width:10px;height:10px;border-radius:50%;
+  background:var(--coral);
+  transform:translate(-50%,-50%);
+  transition:width .3s var(--ease),height .3s var(--ease),opacity .3s;
+  opacity:0;mix-blend-mode:normal;
+}
+#cursor.is-active{width:56px;height:56px;opacity:.9}
+@media(hover:hover) and (pointer:fine){
+  body.cursor-on, body.cursor-on a, body.cursor-on button{cursor:none}
+  #cursor{opacity:1}
+}
+
+/* ============ HEADER ============ */
+.site-head{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(14px + var(--sat) + var(--tg-safe)) 20px 14px;
+  transition:transform .5s var(--ease),background .4s,color .4s;
+  color:var(--cream);
+}
+.site-head.is-hidden{transform:translateY(-110%)}
+.site-head.is-solid{
+  background:color-mix(in srgb,var(--cream) 88%,transparent);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  color:var(--ink);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em;font-size:15px}
+.brand svg{width:26px;height:26px;flex:none}
+.head-nav{display:flex;align-items:center;gap:26px;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.head-nav a{opacity:.85;transition:opacity .25s}
+.head-nav a:hover{opacity:1}
+@media(max-width:640px){.head-nav a.nav-link{display:none}}
+.cart-btn{
+  position:relative;display:flex;align-items:center;gap:8px;
+  font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:9px 16px;border:1px solid currentColor;border-radius:100px;
+  transition:background .3s,color .3s,border-color .3s;
+}
+.site-head.is-solid .cart-btn:hover, .site-head:not(.is-solid) .cart-btn:hover{background:var(--coral);border-color:var(--coral);color:var(--cream)}
+.cart-count{
+  min-width:20px;height:20px;border-radius:10px;
+  background:var(--coral);color:var(--cream);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;padding:0 5px;
+}
+.me-link{
+  font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  opacity:.85;transition:opacity .25s;white-space:nowrap;
+}
+.me-link:hover{opacity:1}
+.me-link[hidden]{display:none}
+
+/* ============ HERO ============ */
+.hero{
+  position:relative;min-height:100svh;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  overflow:hidden;color:var(--cream);
+}
+.hero__media{position:absolute;inset:0;z-index:-1}
+.hero__media img{
+  width:100%;height:100%;object-fit:cover;object-position:center 30%;
+  transform:scale(1.18);transform-origin:center;
+}
+.hero__media::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(7,32,14,.82) 0%,rgba(7,32,14,.28) 45%,rgba(7,32,14,.12) 70%,rgba(7,32,14,.3) 100%);
+}
+.hero__inner{
+  padding:0 20px calc(28px + var(--sab));
+  display:flex;flex-direction:column;gap:18px;
+}
+.hero__kicker{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:11px;font-weight:700;letter-spacing:.3em;text-transform:uppercase;
+  opacity:0;
+}
+.hero__kicker::before{content:"";width:34px;height:1px;background:var(--cream);opacity:.7}
+.hero h1{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(44px,11.5vw,118px);
+  line-height:.98;letter-spacing:-.015em;
+  text-wrap:balance;
+}
+.hero h1 em{font-style:italic;font-weight:400;color:#FFD9DE}
+.hero h1 .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.08em;margin-bottom:-.08em}
+.hero h1 .c{display:inline-block;transform:translateY(110%)}
+.hero__sub{
+  max-width:420px;font-size:15px;line-height:1.6;color:rgba(243,238,225,.85);
+  opacity:0;
+}
+.hero__cta{display:flex;flex-wrap:wrap;gap:12px;opacity:0}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:15px 26px;border-radius:100px;
+  transition:transform .35s var(--ease),background .3s,color .3s,border-color .3s;
+}
+.btn:active{transform:scale(.96)}
+.btn--coral{background:var(--coral);color:var(--cream)}
+.btn--coral:hover{background:var(--coral-deep)}
+.btn--ghost{border:1px solid rgba(243,238,225,.55);color:var(--cream)}
+.btn--ghost:hover{border-color:var(--cream);background:rgba(243,238,225,.12)}
+.btn--ink{background:var(--ink);color:var(--cream)}
+.btn--ink:hover{background:#0E4A1E}
+.hero__meta{
+  display:flex;flex-wrap:wrap;gap:8px 26px;
+  padding-top:18px;border-top:1px solid rgba(243,238,225,.25);
+  font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(243,238,225,.75);opacity:0;
+}
+@media(min-width:900px){
+  .hero__inner{padding:0 56px 48px}
+}
+
+/* ============ RIBBON ============ */
+.ribbon{
+  overflow:hidden;padding:34px 0 30px;
+  border-bottom:1px solid var(--line);
+  background:var(--cream);
+}
+.ribbon__track{
+  display:flex;gap:0;white-space:nowrap;will-change:transform;
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(38px,7vw,84px);line-height:1;letter-spacing:-.01em;
+}
+.ribbon__track span{padding-right:.6em}
+.ribbon__track .o{
+  color:transparent;-webkit-text-stroke:1px var(--ink-40);
+}
+.ribbon__track em{font-style:italic;color:var(--coral)}
+.ribbon__track .ast{color:var(--ink-40);font-family:var(--sans);font-weight:400;font-size:.5em;vertical-align:.35em;padding-right:1.2em}
+
+/* ============ SECTIONS COMMON ============ */
+.section{padding:72px 20px}
+@media(min-width:900px){.section{padding:120px 56px}}
+.sec-head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+  margin-bottom:48px;
+}
+.sec-head h2{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(34px,6.5vw,64px);line-height:1.02;letter-spacing:-.01em;
+}
+.sec-head h2 em{font-style:italic;color:var(--coral)}
+.sec-head .sec-note{
+  font-size:12px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--ink-40);padding-bottom:8px;white-space:nowrap;
+}
+[data-reveal]{opacity:0;transform:translateY(34px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
+[data-reveal].is-in{opacity:1;transform:none}
+.no-motion [data-reveal]{opacity:1;transform:none;transition:none}
+
+/* ============ CATALOG ============ */
+.plant{
+  display:grid;grid-template-columns:1fr;gap:26px;
+  padding:44px 0;border-top:1px solid var(--line);
+}
+.plant:first-of-type{border-top:none;padding-top:0}
+.plant__fig{
+  position:relative;overflow:hidden;border-radius:4px;
+  aspect-ratio:4/5;background:var(--cream-2);
+}
+.plant__fig img{
+  width:100%;height:112%;object-fit:cover;will-change:transform;
+}
+.plant__badge{
+  position:absolute;top:14px;left:14px;
+  font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+  background:var(--cream);color:var(--ink);
+  padding:7px 12px;border-radius:100px;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.plant__badge::before{content:"";width:6px;height:6px;border-radius:50%;background:#2E9E4F;box-shadow:0 0 0 3px rgba(46,158,79,.25)}
+.plant__body{display:flex;flex-direction:column;justify-content:center;gap:16px;min-width:0}
+.plant__num{
+  font-family:var(--serif);font-style:italic;
+  font-size:15px;color:var(--ink-40);letter-spacing:.1em;
+}
+.plant__body h3{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(30px,5.4vw,52px);line-height:1.02;letter-spacing:-.01em;
+}
+.plant__desc{color:var(--ink-60);font-size:15px;max-width:400px}
+.plant__row{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding-top:18px;border-top:1px solid var(--line);
+}
+.plant__price{display:flex;align-items:baseline;gap:8px}
+.plant__price b{
+  font-family:var(--serif);font-weight:600;
+  font-size:clamp(26px,4vw,36px);letter-spacing:-.01em;
+}
+.plant__price span{font-size:13px;color:var(--ink-40);font-weight:600}
+/* Italicize — фирменный hover: прямое начертание перетекает в курсив */
+.italicize{display:grid;grid-template:1fr/1fr}
+.italicize>.r,.italicize>.i{grid-area:1/1;transition:opacity .3s var(--ease)}
+.italicize>.i{font-style:italic;letter-spacing:.03em;opacity:0}
+@media(hover:hover){
+  .add-btn:hover .italicize>.r{opacity:0}
+  .add-btn:hover .italicize>.i{opacity:1}
+}
+.add-btn{
+  display:inline-flex;align-items:center;gap:12px;
+  font-family:var(--serif);font-weight:600;font-size:21px;
+  color:var(--ink);padding:6px 2px;position:relative;
+}
+.add-btn::after{
+  content:"";position:absolute;left:0;bottom:0;height:1px;width:100%;
+  background:var(--ink);transform-origin:left;transition:transform .45s var(--ease),background .3s;
+}
+@media(hover:hover){.add-btn:hover::after{transform:scaleX(.35);background:var(--coral)}}
+.add-btn .plus{
+  width:34px;height:34px;border-radius:50%;flex:none;
+  border:1px solid var(--ink-40);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:var(--sans);font-size:17px;font-weight:500;
+  transition:background .3s,border-color .3s,color .3s,transform .35s var(--ease);
+}
+@media(hover:hover){.add-btn:hover .plus{background:var(--coral);border-color:var(--coral);color:var(--cream);transform:rotate(90deg)}}
+.add-btn.is-added .plus{background:#2E9E4F;border-color:#2E9E4F;color:var(--cream)}
+@media(min-width:900px){
+  .plant{grid-template-columns:7fr 5fr;gap:64px;padding:72px 0}
+  .plant:nth-child(even) .plant__fig{order:2}
+  .plant:nth-child(even) .plant__body{order:1}
+  .plant__fig{aspect-ratio:5/4}
+}
+
+/* ============ GALLERY STRIP ============ */
+.gallery{background:var(--ink);color:var(--cream)}
+.gallery .sec-note{color:rgba(243,238,225,.45)}
+.gallery__strip{
+  display:flex;gap:14px;overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  padding-bottom:12px;
+  scrollbar-width:none;
+  margin:0 -20px;padding-left:20px;padding-right:20px;
+}
+.gallery__strip::-webkit-scrollbar{display:none}
+.g-item{
+  flex:0 0 72vw;max-width:420px;scroll-snap-align:start;
+  position:relative;border-radius:4px;overflow:hidden;
+}
+.g-item img{width:100%;aspect-ratio:3/4;object-fit:cover}
+.g-item figcaption{
+  position:absolute;left:14px;bottom:12px;
+  font-family:var(--serif);font-style:italic;font-size:17px;
+  text-shadow:0 1px 12px rgba(7,32,14,.7);
+}
+@media(min-width:900px){
+  .g-item{flex-basis:32vw}
+  .gallery__strip{margin:0;padding-left:0;padding-right:0}
+}
+
+/* ============ HOW ============ */
+.how__steps{display:flex;flex-direction:column}
+.step{
+  display:grid;grid-template-columns:64px 1fr;gap:20px;align-items:start;
+  padding:30px 0;border-top:1px solid var(--line);
+}
+.step__num{
+  font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:clamp(30px,5vw,44px);color:var(--coral);line-height:1;
+}
+.step h4{font-size:16px;font-weight:800;letter-spacing:.02em;margin-bottom:8px}
+.step p{color:var(--ink-60);font-size:14.5px;max-width:480px}
+.step__link{color:var(--coral-deep);font-weight:700;border-bottom:1px solid var(--coral-deep)}
+
+/* ============ FINAL CTA ============ */
+.final{
+  background:var(--cream);
+  text-align:left;
+}
+.final h2{
+  font-family:var(--serif);font-weight:500;
+  font-size:clamp(40px,9vw,96px);line-height:1;letter-spacing:-.015em;
+  margin-bottom:28px;text-wrap:balance;
+}
+.final h2 em{font-style:italic;color:var(--coral)}
+.final p{color:var(--ink-60);max-width:440px;margin-bottom:32px}
+
+/* ============ FOOTER ============ */
+footer{
+  background:var(--ink);color:var(--cream);
+  padding:64px 20px calc(28px + var(--sab));
+}
+@media(min-width:900px){footer{padding:96px 56px 40px}}
+.foot__word{
+  font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:clamp(52px,13vw,150px);line-height:.95;letter-spacing:-.02em;
+  color:transparent;-webkit-text-stroke:1px rgba(243,238,225,.5);
+  margin-bottom:40px;transition:color 1s var(--ease);
+}
+.foot__word:hover{color:rgba(243,238,225,.9);-webkit-text-stroke:1px transparent}
+.foot__grid{
+  display:flex;flex-wrap:wrap;gap:24px 48px;justify-content:space-between;
+  padding-top:28px;border-top:1px solid rgba(243,238,225,.2);
+  font-size:13px;color:rgba(243,238,225,.65);
+}
+.foot__grid a{border-bottom:1px solid rgba(243,238,225,.35);transition:color .3s,border-color .3s}
+.foot__grid a:hover{color:var(--cream);border-color:var(--cream)}
+
+/* ============ CART BAR ============ */
+.cart-bar{
+  position:fixed;left:14px;right:14px;bottom:calc(14px + var(--sab));z-index:110;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:var(--ink);color:var(--cream);
+  border-radius:100px;padding:10px 10px 10px 22px;
+  box-shadow:0 18px 48px rgba(7,32,14,.35);
+  transform:translateY(140%);transition:transform .55s var(--ease);
+}
+.cart-bar.is-visible{transform:translateY(0)}
+.cart-bar__info{font-size:14px;font-weight:600}
+.cart-bar__info b{font-family:var(--serif);font-size:20px;font-weight:600;margin-right:8px}
+.cart-bar__btn{
+  background:var(--coral);color:var(--cream);border-radius:100px;
+  font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:13px 22px;transition:background .3s;
+}
+.cart-bar__btn:hover{background:var(--coral-deep)}
+@media(min-width:900px){.cart-bar{left:auto;right:32px;bottom:32px;min-width:360px}}
+
+/* ============ CART DRAWER ============ */
+.drawer-overlay{
+  position:fixed;inset:0;z-index:120;
+  background:rgba(7,32,14,.5);
+  opacity:0;pointer-events:none;transition:opacity .4s;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+.drawer-overlay.is-open{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;bottom:0;z-index:130;
+  width:min(430px,100%);
+  height:100dvh;max-height:-webkit-fill-available;
+  background:var(--cream);color:var(--ink);
+  transform:translateX(102%);transition:transform .55s var(--ease);
+  display:flex;flex-direction:column;
+  padding-top:var(--sat);
+}
+.drawer.is-open{transform:translateX(0)}
+.drawer__head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 24px;border-bottom:1px solid var(--line);
+}
+.drawer__head h3{font-family:var(--serif);font-weight:500;font-size:30px}
+.drawer__close{
+  width:40px;height:40px;border-radius:50%;border:1px solid var(--line);
+  font-size:18px;display:flex;align-items:center;justify-content:center;
+  transition:transform .4s var(--ease),background .3s,color .3s;
+}
+.drawer__close:hover{transform:rotate(90deg);background:var(--ink);color:var(--cream)}
+.drawer__list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:8px 24px}
+.cart-item{
+  display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;
+  padding:16px 0;border-bottom:1px solid var(--line);
+}
+.cart-item img{width:64px;height:80px;object-fit:cover;border-radius:3px}
+.cart-item__name{font-family:var(--serif);font-weight:600;font-size:19px;line-height:1.15}
+.cart-item__unit{font-size:12px;color:var(--ink-40);margin-top:3px}
+.qty{
+  display:inline-flex;align-items:center;gap:12px;margin-top:10px;
+  border:1px solid var(--line);border-radius:100px;padding:4px 12px;
+}
+.qty button{font-size:16px;font-weight:600;width:20px;height:24px}
+.qty b{font-size:13px;min-width:16px;text-align:center;font-variant-numeric:tabular-nums}
+.cart-item__right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.cart-item__sum{font-family:var(--serif);font-weight:600;font-size:19px;font-variant-numeric:tabular-nums}
+.cart-item__del{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-40);border-bottom:1px solid transparent}
+.cart-item__del:hover{color:var(--coral-deep);border-color:var(--coral-deep)}
+.drawer__empty{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  color:var(--ink-40);text-align:center;padding:24px;
+}
+.drawer__empty .big{font-family:var(--serif);font-style:italic;font-size:26px;color:var(--ink)}
+.drawer__foot{padding:20px 24px calc(20px + var(--sab));border-top:1px solid var(--line)}
+.drawer__total{
+  display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;
+}
+.drawer__total b{font-family:var(--serif);font-weight:600;font-size:30px;font-variant-numeric:tabular-nums}
+.drawer__note{font-size:12px;color:var(--ink-40);margin-bottom:16px;line-height:1.5}
+.drawer__checkout{width:100%;justify-content:center}
+
+/* ============ TOAST ============ */
+#toast{
+  position:fixed;left:50%;bottom:calc(88px + var(--sab));z-index:140;
+  transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--cream);
+  font-size:13px;font-weight:600;
+  padding:12px 22px;border-radius:100px;
+  transition:transform .4s var(--ease),opacity .4s;
+  white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;
+}
+#toast.is-show{transform:translate(-50%,0);opacity:1}
+
+/* ============ VARIANTS ACCORDION ============ */
+.plant__badge.is-muted::before{background:var(--ink-40);box-shadow:none}
+.variants-toggle{
+  display:inline-flex;align-items:center;gap:10px;align-self:flex-start;
+  font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-60);padding:10px 0;border-bottom:1px solid var(--line);
+  transition:color .3s,border-color .3s;
+}
+.variants-toggle:hover{color:var(--ink);border-color:var(--ink)}
+.variants-toggle .vt-caret{
+  font-family:var(--serif);font-style:italic;font-size:16px;line-height:1;
+  transition:transform .4s var(--ease);
+}
+.variants-toggle.is-open .vt-caret{transform:rotate(180deg)}
+.variants-wrap{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;padding-top:18px}
+@media(min-width:900px){.variants-wrap{padding-top:26px}}
+.variants{overflow:hidden;height:0;opacity:0;transition:height .55s var(--ease),opacity .4s}
+.variants.is-open{opacity:1}
+.variants__grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:22px 18px;
+  padding:26px 0 6px;border-top:1px solid var(--line);
+}
+@media(min-width:900px){.variants__grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}}
+.variants__note{padding:22px 0 6px;border-top:1px solid var(--line);color:var(--ink-40);font-size:14px}
+.variant{display:flex;flex-direction:column;gap:7px;min-width:0}
+.variant.is-out{opacity:.45}
+.variant__fig{overflow:hidden;border-radius:4px;aspect-ratio:3/4;background:var(--cream-2);cursor:pointer}
+.variant__fig img{width:100%;height:100%;object-fit:cover;transition:transform .6s var(--ease)}
+@media(hover:hover){.variant:not(.is-out) .variant__fig:hover img{transform:scale(1.05)}}
+.variant__kind{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--coral)}
+.variant__title{font-family:var(--serif);font-weight:600;font-size:17px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.4em}
+.variant__stock{font-size:11px;color:var(--ink-40);min-height:18px;line-height:1.2}
+.variant__row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
+.variant__price{font-family:var(--serif);font-weight:600;font-size:19px;white-space:nowrap}
+.variant__add{
+  width:34px;height:34px;border-radius:50%;flex:none;
+  border:1px solid var(--ink-40);
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:17px;font-weight:500;
+  transition:background .3s,border-color .3s,color .3s,transform .35s var(--ease);
+}
+@media(hover:hover){.variant__add:hover{background:var(--coral);border-color:var(--coral);color:var(--cream);transform:rotate(90deg)}}
+.variant__add:disabled{opacity:.4;pointer-events:none}
+.variants__grid{align-items:stretch;grid-auto-rows:1fr}
+.variant{height:100%}
+.variant__fig{flex:none}
+.variant__body{flex:1 1 auto;display:flex;flex-direction:column;gap:4px}
+.variant__foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.variant.is-sapling .variant__foot{justify-content:flex-start}
+.variant.is-sapling .variant__body{justify-content:flex-end;gap:8px}
+.variant.is-sapling .variant__fig{aspect-ratio:1/1}
+.variant__note{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--coral)}
+
+/* ============ CHECKOUT FORM (drawer) ============ */
+.drawer__view{flex:1;display:flex;flex-direction:column;min-height:0}
+.drawer__view[hidden]{display:none}
+.drawer__scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;padding:20px 24px}
+.drawer__subtitle{font-family:var(--serif);font-style:italic;font-weight:500;font-size:22px;margin-bottom:6px}
+.form-hint{font-size:12.5px;color:var(--ink-40);margin-bottom:18px;line-height:1.55}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-40);margin-bottom:7px}
+.field input,.field textarea{
+  width:100%;font-family:var(--sans);font-size:15px;color:var(--ink);
+  background:transparent;border:1px solid var(--line);border-radius:16px;
+  padding:13px 17px;outline:none;transition:border-color .3s;resize:none;
+}
+.field input:focus,.field textarea:focus{border-color:var(--ink)}
+.field.is-error input,.field.is-error textarea{border-color:var(--coral-deep)}
+.form-problems{
+  display:none;margin:2px 0 16px;padding:12px 16px;
+  border:1px solid rgba(188,47,71,.35);border-radius:14px;
+  color:var(--coral-deep);font-size:13px;line-height:1.55;
+}
+.form-problems.is-show{display:block}
+.form-sum{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 6px;border-top:1px solid var(--line);font-size:14px;font-weight:600}
+.form-sum b{font-family:var(--serif);font-weight:600;font-size:26px;font-variant-numeric:tabular-nums}
+.drawer__back{
+  display:block;margin:12px auto 0;
+  font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-40);transition:color .3s;
+}
+.drawer__back:hover{color:var(--ink)}
+.btn.is-loading{opacity:.55;pointer-events:none}
+.ok-big{font-family:var(--serif);font-weight:500;font-size:32px;line-height:1.08;margin-bottom:10px}
+.ok-rows{margin:16px 0;border-top:1px solid var(--line)}
+.ok-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ok-row b{font-family:var(--serif);font-weight:600;font-size:19px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ok-req{
+  font-size:13.5px;line-height:1.6;background:var(--cream-2);
+  border-radius:14px;padding:14px 16px;margin-bottom:14px;white-space:pre-line;
+}
+
+/* ============ LIGHTBOX ============ */
+.lightbox{
+  position:fixed;inset:0;z-index:160;
+  background:rgba(7,32,14,.88);
+  display:flex;align-items:center;justify-content:center;padding:22px;
+  opacity:0;pointer-events:none;transition:opacity .35s;
+}
+.lightbox.is-open{opacity:1;pointer-events:auto}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:4px}
+
+/* Страховка: если анимация прервана средой — показать контент */
+body.hero-safe #preloader{transform:translateY(-100%);transition:transform .8s var(--ease)}
+body.hero-safe #heroTitle .c{transform:none!important}
+body.hero-safe .hero__kicker,body.hero-safe .hero__sub,
+body.hero-safe .hero__cta,body.hero-safe .hero__meta{opacity:1!important}
+body.hero-safe .hero__media img{transform:none!important}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<!-- PRELOADER -->
+<div id="preloader" aria-hidden="true">
+  <svg class="leaf" viewBox="0 0 48 48" fill="none">
+    <path d="M24 44C24 44 8 34 8 20C8 11 15 4 24 4C33 4 40 11 40 20C40 34 24 44 24 44Z"/>
+    <path d="M24 44V14M24 22C24 22 19 20 17 15M24 28C24 28 30 26 32 19"/>
+  </svg>
+  <div id="pre-count">0</div>
+  <div class="pre-label">Питомник · многолетники</div>
+</div>
+
+<div id="cursor" aria-hidden="true"></div>
+
+<!-- HEADER -->
+<header class="site-head" id="siteHead">
+  <a class="brand" href="#top" data-cursor>
+    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M24 44C24 44 8 34 8 20C8 11 15 4 24 4C33 4 40 11 40 20C40 34 24 44 24 44Z" stroke="currentColor" stroke-width="2.4"/>
+      <path d="M24 44V14M24 22C24 22 19 20 17 15M24 28C24 28 30 26 32 19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    Питомник
+  </a>
+  <nav class="head-nav">
+    <a class="nav-link" href="#catalog" data-cursor>Каталог</a>
+    <a class="nav-link" href="#how" data-cursor>Как заказать</a>
+    <a class="me-link" id="meLink" href="/static/me.html" data-cursor hidden>Мои клиенты</a>
+    <button class="cart-btn" id="headCartBtn" data-cursor>
+      Корзина <span class="cart-count" id="headCartCount">0</span>
+    </button>
+  </nav>
+</header>
+
+<main id="top">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero__media"><img src="/static/assets/img/hero.jpg" alt="Коралловые пионы из питомника" fetchpriority="high"></div>
+    <div class="hero__inner">
+      <span class="hero__kicker">Сезон 2026 · всё в наличии</span>
+      <h1 id="heroTitle">Сад, который <em>возвращается</em> каждый год</h1>
+      <p class="hero__sub">Саженцы и луковицы многолетников из нашего питомника. Выращиваем сами, бережно упаковываем, отправляем по всей России.</p>
+      <div class="hero__cta">
+        <a class="btn btn--coral" href="#catalog" data-cursor>Смотреть каталог</a>
+        <a class="btn btn--ghost" href="https://t.me/PItomnik3_bot" target="_blank" rel="noopener" data-cursor>Telegram-бот</a>
+      </div>
+      <div class="hero__meta">
+        <span>7 культур</span>
+        <span>от 100 ₽</span>
+        <span>доставка по РФ</span>
+        <span>заказ за 2 минуты</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- RIBBON -->
+  <div class="ribbon" aria-hidden="true">
+    <div class="ribbon__track" id="ribbonTrack">
+      <span class="o">Пионы</span><span class="ast">✳</span><span><em>Лилии</em></span><span class="ast">✳</span><span class="o">Флоксы</span><span class="ast">✳</span><span><em>Хосты</em></span><span class="ast">✳</span><span class="o">Гортензии</span><span class="ast">✳</span><span><em>Хризантемы</em></span><span class="ast">✳</span><span class="o">Декоративный лук</span><span class="ast">✳</span>
+      <span class="o">Пионы</span><span class="ast">✳</span><span><em>Лилии</em></span><span class="ast">✳</span><span class="o">Флоксы</span><span class="ast">✳</span><span><em>Хосты</em></span><span class="ast">✳</span><span class="o">Гортензии</span><span class="ast">✳</span><span><em>Хризантемы</em></span><span class="ast">✳</span><span class="o">Декоративный лук</span><span class="ast">✳</span>
+    </div>
+  </div>
+
+  <!-- CATALOG -->
+  <section class="section" id="catalog">
+    <div class="sec-head" data-reveal>
+      <h2>Каталог <em>сезона</em></h2>
+      <span class="sec-note">01 — 07 · в наличии</span>
+    </div>
+
+    <article class="plant" data-id="pion" data-reveal>
+      <figure class="plant__fig">
+        <img src="/static/assets/img/pion.jpg" alt="Пионы" loading="lazy">
+        <span class="plant__badge">В наличии</span>
+      </figure>
+      <div class="plant__body">
+        <span class="plant__num">№ 01</span>
+        <h3>Пионы</h3>
+        <p class="plant__desc">Пышное цветение начала лета. Тот самый куст, ради которого заводят сад.</p>
+        <div class="plant__row">
+          <div class="plant__price"><b>350 ₽</b><span>/ саженец</span></div>
+          <button class="add-btn" data-add="pion" data-cursor>
+            <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
+            <span class="plus">+</span>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="plant" data-id="liliya" data-reveal>
+      <figure class="plant__fig">
+        <img src="/static/assets/img/liliya.jpg" alt="Лилии" loading="lazy">
+        <span class="plant__badge">В наличии</span>
+      </figure>
+      <div class="plant__body">
+        <span class="plant__num">№ 02</span>
+        <h3>Лилии</h3>
+        <p class="plant__desc">Высокие свечи соцветий. Одна луковица — и клумба звучит по-новому.</p>
+        <div class="plant__row">
+          <div class="plant__price"><b>100 ₽</b><span>/ луковица</span></div>
+          <button class="add-btn" data-add="liliya" data-cursor>
+            <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
+            <span class="plus">+</span>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="plant" data-id="floks" data-reveal>
+      <figure class="plant__fig">
+        <img src="/static/assets/img/floks.jpg" alt="Флоксы" loading="lazy">
+        <span class="plant__badge">В наличии</span>
+      </figure>
+      <div class="plant__body">
+        <span class="plant__num">№ 03</span>
+        <h3>Флоксы</h3>
+        <p class="plant__desc">Плотные пёстрые шапки и долгое цветение. Классика, которая не надоедает.</p>
+        <div class="plant__row">
+          <div class="plant__price"><b>200 ₽</b><span>/ саженец</span></div>
+          <button class="add-btn" data-add="floks" data-cursor>
+            <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
+            <span class="plus">+</span>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="plant" data-id="hosta" data-reveal>
+      <figure class="plant__fig">
+        <img src="/static/assets/img/hosta.jpg" alt="Хосты" loading="lazy">
+        <span class="plant__badge">В наличии</span>
+      </figure>
+      <div class="plant__body">
+        <span class="plant__num">№ 04</span>
+        <h3>Хосты</h3>
+        <p class="plant__desc">Декоративная листва для тенистых уголков — там, где другие сдаются.</p>
+        <div class="plant__row">
+          <div class="plant__price"><b>250 ₽</b><span>/ саженец</span></div>
+          <button class="add-btn" data-add="hosta" data-cursor>
+            <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
+            <span class="plus">+</span>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="plant" data-id="gortenziya" data-reveal>
+      <figure class="plant__fig">
+        <img src="/static/assets/img/gortenziya.jpg" alt="Гортензия метельчатая" loading="lazy">
+        <span class="plant__badge">В наличии</span>
+      </figure>
+      <div class="plant__body">
+        <span class="plant__num">№ 05</span>
+        <h3>Гортензия метельчатая</h3>
+        <p class="plant__desc">Метёлки соцветий, которые держат форму до самых заморозков.</p>
+        <div class="plant__row">
+          <div class="plant__price"><b>300 ₽</b><span>/ саженец</span></div>
+          <button class="add-btn" data-add="gortenziya" data-cursor>
+            <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
+            <span class="plus">+</span>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="plant" data-id="hrizantema" data-reveal>
+      <figure class="plant__fig">
+        <img src="/static/assets/img/hrizantema.jpg" alt="Хризантема мультифлора" loading="lazy">
+        <span class="plant__badge">В наличии</span>
+      </figure>
+      <div class="plant__body">
+        <span class="plant__num">№ 06</span>
+        <h3>Хризантема мультифлора</h3>
+        <p class="plant__desc">Шар цвета в конце сезона — когда остальной сад уже пустеет.</p>
+        <div class="plant__row">
+          <div class="plant__price"><b>180 ₽</b><span>/ саженец</span></div>
+          <button class="add-btn" data-add="hrizantema" data-cursor>
+            <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
+            <span class="plus">+</span>
+          </button>
+        </div>
+      </div>
+    </article>
+
+    <article class="plant" data-id="luk" data-reveal>
+      <figure class="plant__fig">
+        <img src="/static/assets/img/luk.jpg" alt="Лук декоративный" loading="lazy">
+        <span class="plant__badge">В наличии</span>
+      </figure>
+      <div class="plant__body">
+        <span class="plant__num">№ 07</span>
+        <h3>Лук декоративный</h3>
+        <p class="plant__desc">Фиолетовые шары на высоких стрелках. Вертикаль и графика в цветнике.</p>
+        <div class="plant__row">
+          <div class="plant__price"><b>120 ₽</b><span>/ луковица</span></div>
+          <button class="add-btn" data-add="luk" data-cursor>
+            <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
+            <span class="plus">+</span>
+          </button>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- GALLERY -->
+  <section class="section gallery">
+    <div class="sec-head" data-reveal>
+      <h2>Живые фото <em>из сада</em></h2>
+      <span class="sec-note">листайте →</span>
+    </div>
+    <div class="gallery__strip" data-reveal>
+      <figure class="g-item"><img src="/static/assets/img/g1.jpg" alt="Пионы" loading="lazy"><figcaption>пионы</figcaption></figure>
+      <figure class="g-item"><img src="/static/assets/img/g2.jpg" alt="Гортензия" loading="lazy"><figcaption>гортензия</figcaption></figure>
+      <figure class="g-item"><img src="/static/assets/img/g3.jpg" alt="Декоративный лук" loading="lazy"><figcaption>декоративный лук</figcaption></figure>
+      <figure class="g-item"><img src="/static/assets/img/g4.jpg" alt="Хоста в поле питомника" loading="lazy"><figcaption>хосты, наши грядки</figcaption></figure>
+      <figure class="g-item"><img src="/static/assets/img/g5.jpg" alt="Хризантема" loading="lazy"><figcaption>хризантема</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section class="section how" id="how">
+    <div class="sec-head" data-reveal>
+      <h2>Как <em>заказать</em></h2>
+      <span class="sec-note">3 шага</span>
+    </div>
+    <div class="how__steps">
+      <div class="step" data-reveal>
+        <span class="step__num">01</span>
+        <div>
+          <h4>Соберите корзину</h4>
+          <p>Выберите растения в каталоге — количество можно изменить в любой момент. Состав заказа сохраняется на устройстве.</p>
+        </div>
+      </div>
+      <div class="step" data-reveal>
+        <span class="step__num">02</span>
+        <div>
+          <h4>Перейдите в Telegram-бот</h4>
+          <p>Кнопка «Оформить» перенесёт вас в <a class="step__link" href="https://t.me/PItomnik3_bot" target="_blank" rel="noopener">@PItomnik3_bot</a> — состав заказа уже будет скопирован, просто отправьте его боту.</p>
+        </div>
+      </div>
+      <div class="step" data-reveal>
+        <span class="step__num">03</span>
+        <div>
+          <h4>Подтвердите и получите</h4>
+          <p>В боте уточняем наличие, согласуем доставку по России и оплату. Упаковываем так, чтобы растение доехало живым.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="section final">
+    <h2 data-reveal>Весна начинается <em>с одного саженца</em></h2>
+    <p data-reveal>Пока вы думаете — лучшие кусты разбирают. Оформите заказ сейчас, а мы подготовим его к отправке.</p>
+    <div data-reveal style="display:flex;gap:12px;flex-wrap:wrap">
+      <a class="btn btn--ink" href="https://t.me/PItomnik3_bot" target="_blank" rel="noopener" data-cursor>Открыть бота</a>
+      <a class="btn" href="#catalog" data-cursor style="border:1px solid var(--ink-40)">Вернуться к каталогу</a>
+    </div>
+  </section>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot__word" data-reveal>питомник</div>
+  <div class="foot__grid">
+    <span>Многолетние растения · доставка по России</span>
+    <a href="https://t.me/PItomnik3_bot" target="_blank" rel="noopener" data-cursor>@PItomnik3_bot</a>
+    <span>© 2026 · Сделано в саду</span>
+  </div>
+</footer>
+
+<!-- CART BAR -->
+<div class="cart-bar" id="cartBar">
+  <div class="cart-bar__info"><b id="cartBarTotal">0 ₽</b><span id="cartBarCount">пусто</span></div>
+  <button class="cart-bar__btn" id="cartBarBtn" data-cursor>Корзина</button>
+</div>
+
+<!-- CART DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer" aria-label="Корзина">
+  <div class="drawer__head">
+    <h3 id="drawerTitle">Корзина</h3>
+    <button class="drawer__close" id="drawerClose" data-cursor aria-label="Закрыть">✕</button>
+  </div>
+
+  <!-- VIEW: корзина -->
+  <div class="drawer__view" id="viewCart">
+    <div class="drawer__list" id="drawerList"></div>
+    <div class="drawer__empty" id="drawerEmpty">
+      <span class="big">Пока пусто</span>
+      <span>Добавьте растения из каталога —<br>сад сам себя не посадит.</span>
+    </div>
+    <div class="drawer__foot" id="drawerFoot" hidden>
+      <div class="drawer__total"><span>Итого</span><b id="drawerTotal">0 ₽</b></div>
+      <p class="drawer__note">Доставка 5Post добавится к сумме на следующем шаге. Наличие переподтверждаем перед отправкой.</p>
+      <button class="btn btn--coral drawer__checkout" id="checkoutBtn" data-cursor>Оформить</button>
+    </div>
+  </div>
+
+  <!-- VIEW: форма оформления -->
+  <div class="drawer__view" id="viewForm" hidden>
+    <div class="drawer__scroll">
+      <p class="drawer__subtitle">Куда отправить заказ</p>
+      <p class="form-hint">Отправляем по России через 5Post. Предоплата 30%, остаток — при получении.</p>
+      <div class="form-problems" id="formProblems" role="alert"></div>
+      <div class="field" id="fName"><label for="inName">ФИО</label><input id="inName" type="text" autocomplete="name" placeholder="Иванова Мария Сергеевна"></div>
+      <div class="field" id="fPhone"><label for="inPhone">Телефон</label><input id="inPhone" type="tel" autocomplete="tel" placeholder="+7 900 000-00-00"></div>
+      <div class="field" id="fCity"><label for="inCity">Город</label><input id="inCity" type="text" placeholder="Москва"></div>
+      <div class="field" id="fPoint"><label for="inPoint">Пункт выдачи 5Post</label><input id="inPoint" type="text" placeholder="Адрес или название пункта"></div>
+      <div class="field"><label for="inComment">Комментарий · необязательно</label><textarea id="inComment" rows="2" placeholder="Пожелания к заказу"></textarea></div>
+    </div>
+    <div class="drawer__foot">
+      <div class="form-sum"><span>Итого с доставкой</span><b id="formSum">0 ₽</b></div>
+      <p class="drawer__note" id="formDeliveryNote"></p>
+      <button class="btn btn--coral drawer__checkout" id="submitOrderBtn" data-cursor>Подтвердить заказ</button>
+      <button class="drawer__back" id="backToCartBtn">← вернуться в корзину</button>
+    </div>
+  </div>
+
+  <!-- VIEW: успех -->
+  <div class="drawer__view" id="viewSuccess" hidden>
+    <div class="drawer__scroll" id="successBody"></div>
+    <div class="drawer__foot">
+      <button class="btn btn--ink drawer__checkout" id="successBackBtn" data-cursor>Вернуться в каталог</button>
+    </div>
+  </div>
+</aside>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox"><img id="lightboxImg" alt="Фото растения"></div>
+
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Telegram Mini App init (скрипт грузится async — ждём его) ---------- */
+var tg = null, tgTries = 0;
+function tryInitTg(){
+  if (tg) return;
+  if (window.Telegram && window.Telegram.WebApp) {
+    tg = window.Telegram.WebApp;
+    try {
+      tg.ready();
+      tg.expand();
+      if (tg.setHeaderColor) tg.setHeaderColor('#F3EEE1');
+      if (tg.setBackgroundColor) tg.setBackgroundColor('#F3EEE1');
+      if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+    } catch(e){}
+    captureRef();    /* start_param вида ref_<code> */
+    checkEmployee(); /* ссылка «Мои клиенты» для сотрудников */
+  } else if (++tgTries < 25) {
+    setTimeout(tryInitTg, 200);
+  }
+}
+tryInitTg();
+function haptic(style){
+  try { if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light'); } catch(e){}
+}
+
+/* ---------- Catalog data ---------- */
+/* Маппинг slug сайта → slug API */
+var SLUG_TO_API = {pion:'pion', liliya:'lily', floks:'phlox', hosta:'hosta', gortenziya:'hydrangea', hrizantema:'chrysanthemum', luk:'allium'};
+/* Офлайн-fallback: если API недоступен (файл открыт локально) — остаются захардкоженные карточки */
+var FALLBACK = {
+  pion:       {name:'Пионы',                  price:350, unit:'саженец',  img:'/static/assets/img/pion.jpg'},
+  liliya:     {name:'Лилии',                  price:100, unit:'луковица', img:'/static/assets/img/liliya.jpg'},
+  floks:      {name:'Флоксы',                 price:200, unit:'саженец',  img:'/static/assets/img/floks.jpg'},
+  hosta:      {name:'Хосты',                  price:250, unit:'саженец',  img:'/static/assets/img/hosta.jpg'},
+  gortenziya: {name:'Гортензия метельчатая',  price:300, unit:'саженец',  img:'/static/assets/img/gortenziya.jpg'},
+  hrizantema: {name:'Хризантема мультифлора', price:180, unit:'саженец',  img:'/static/assets/img/hrizantema.jpg'},
+  luk:        {name:'Лук декоративный',       price:120, unit:'луковица', img:'/static/assets/img/luk.jpg'}
+};
+var CATALOG = {};    /* site slug → {apiSlug, name, itemsCount, loaded, loading, items} */
+var ITEM_INDEX = {}; /* item id → позиция из API */
+var CONFIG = {delivery_cost: null, manager_contact: '', bot_username: 'PItomnik3_bot'};
+var CART_KEY = 'pitomnik_cart_v2'; /* v1 (по категориям) игнорируем */
+var cart = {};
+try { cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}') || {}; } catch(e){ cart = {}; }
+function saveCart(){ try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch(e){} }
+function fmt(n){ return n.toLocaleString('ru-RU') + ' ₽'; }
+function plural(n, one, few, many){
+  var m = Math.abs(n) % 100, d = m % 10;
+  if (m > 10 && m < 20) return many;
+  if (d > 1 && d < 5) return few;
+  if (d === 1) return one;
+  return many;
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+/* ---------- DOM refs ---------- */
+var $ = function(s){ return document.querySelector(s); };
+var $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+var toastEl = $('#toast'), toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('is-show'); }, 2200);
+}
+
+/* ---------- Motion setup ---------- */
+var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var hasGsap = typeof window.gsap !== 'undefined';
+var lenis = null;
+
+if (reduced || !hasGsap) {
+  document.body.classList.add('no-motion');
+  var pre = $('#preloader');
+  if (pre) pre.parentNode.removeChild(pre);
+  $$('.hero__kicker,.hero__sub,.hero__cta,.hero__meta').forEach(function(el){ el.style.opacity = 1; });
+  var h = $('#heroTitle'); if (h) h.style.opacity = 1;
+  var hi = document.querySelector('.hero__media img'); if (hi) hi.style.transform = 'none';
+}
+
+if (hasGsap && !reduced) {
+  gsap.registerPlugin(ScrollTrigger);
+  if (typeof window.Lenis !== 'undefined') {
+    lenis = new Lenis({ duration: 1.15, smoothWheel: true });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+    gsap.ticker.lagSmoothing(0);
+  }
+}
+
+/* Anchor smooth scroll */
+$$('a[href^="#"]').forEach(function(a){
+  a.addEventListener('click', function(ev){
+    var id = a.getAttribute('href');
+    if (id.length > 1) {
+      var target = document.querySelector(id);
+      if (target) {
+        ev.preventDefault();
+        if (lenis) lenis.scrollTo(target, {offset: -70});
+        else target.scrollIntoView({behavior:'smooth'});
+      }
+    }
+  });
+});
+
+/* ---------- Preloader + hero intro ---------- */
+if (hasGsap && !reduced) {
+  /* split hero title into chars */
+  var title = $('#heroTitle');
+  (function split(node){
+    var frag = document.createDocumentFragment();
+    Array.prototype.slice.call(node.childNodes).forEach(function(child){
+      if (child.nodeType === 3) {
+        child.textContent.split(/(\s+)/).forEach(function(word){
+          if (!word) return;
+          if (/^\s+$/.test(word)) { frag.appendChild(document.createTextNode(' ')); return; }
+          var w = document.createElement('span'); w.className = 'w';
+          word.split('').forEach(function(ch){
+            var c = document.createElement('span'); c.className = 'c'; c.textContent = ch;
+            w.appendChild(c);
+          });
+          frag.appendChild(w);
+        });
+      } else if (child.nodeType === 1) {
+        var em = document.createElement(child.tagName.toLowerCase());
+        Array.prototype.slice.call(child.childNodes).forEach(function(c2){ em.appendChild(c2.cloneNode(true)); });
+        /* split em content too, keep italic styling */
+        var text = em.textContent; em.textContent = '';
+        text.split(/(\s+)/).forEach(function(word){
+          if (!word) return;
+          if (/^\s+$/.test(word)) { em.appendChild(document.createTextNode(' ')); return; }
+          var w = document.createElement('span'); w.className = 'w';
+          word.split('').forEach(function(ch){
+            var c = document.createElement('span'); c.className = 'c'; c.textContent = ch;
+            w.appendChild(c);
+          });
+          em.appendChild(w);
+        });
+        frag.appendChild(em);
+      }
+    });
+    node.innerHTML = '';
+    node.appendChild(frag);
+  })(title);
+
+  var counter = { v: 0 };
+  var preCount = $('#pre-count');
+  var tl = gsap.timeline();
+  tl.to('#preloader .leaf path', {strokeDashoffset: 0, duration: 1.1, ease: 'power2.inOut'}, 0)
+    .to(counter, {v: 100, duration: 1.3, ease: 'power2.inOut',
+        onUpdate: function(){ preCount.textContent = Math.round(counter.v); }}, 0)
+    .to('#preloader', {yPercent: -100, duration: .9, ease: 'power4.inOut'}, '+=.15')
+    .set('#preloader', {display: 'none'})
+    .to('.hero__media img', {scale: 1, duration: 1.6, ease: 'power3.out'}, '-=.75')
+    .to('#heroTitle .c', {y: 0, duration: 1.05, ease: 'power4.out', stagger: .018}, '-=1.3')
+    .to('.hero__kicker', {opacity: 1, duration: .6}, '-=.8')
+    .to('.hero__sub',    {opacity: 1, y: 0, duration: .7, ease: 'power2.out'}, '-=.55')
+    .to('.hero__cta',    {opacity: 1, duration: .7}, '-=.45')
+    .to('.hero__meta',   {opacity: 1, duration: .7}, '-=.4');
+
+  /* subtle hero parallax on scroll */
+  gsap.to('.hero__media img', {
+    yPercent: 14, ease: 'none',
+    scrollTrigger: {trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true}
+  });
+
+  /* ribbon scrub */
+  var track = $('#ribbonTrack');
+  gsap.fromTo(track, {x: 0}, {
+    x: function(){ return -(track.scrollWidth / 2) * .55; },
+    ease: 'none',
+    scrollTrigger: {trigger: '.ribbon', start: 'top bottom', end: 'bottom top', scrub: .6}
+  });
+
+  /* reveals — IntersectionObserver + CSS-переходы (не зависят от rAF) */
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); }
+      });
+    }, {rootMargin: '0px 0px -12% 0px', threshold: 0});
+    $$('[data-reveal]').forEach(function(el){ io.observe(el); });
+    /* страховка: если observer в какой-то среде не сработал — раскрываем по скроллу */
+    var revealFallback = function(){
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      $$('[data-reveal]:not(.is-in)').forEach(function(el){
+        var r = el.getBoundingClientRect();
+        if (r.top < vh * .9) el.classList.add('is-in');
+      });
+    };
+    window.addEventListener('scroll', revealFallback, {passive: true});
+    setTimeout(revealFallback, 800);
+  } else {
+    $$('[data-reveal]').forEach(function(el){ el.classList.add('is-in'); });
+  }
+
+  /* catalog image parallax */
+  $$('.plant__fig img').forEach(function(img){
+    gsap.fromTo(img, {yPercent: -6}, {
+      yPercent: 6, ease: 'none',
+      scrollTrigger: {trigger: img.closest('.plant__fig'), start: 'top bottom', end: 'bottom top', scrub: true}
+    });
+  });
+}
+
+/* ---------- Header behavior ---------- */
+var head = $('#siteHead'), lastY = 0;
+function onScrollHead(){
+  var y = window.scrollY || document.documentElement.scrollTop;
+  head.classList.toggle('is-solid', y > window.innerHeight * .72);
+  if (y > 140 && y > lastY + 6) head.classList.add('is-hidden');
+  else if (y < lastY - 6 || y < 140) head.classList.remove('is-hidden');
+  lastY = y;
+}
+window.addEventListener('scroll', onScrollHead, {passive: true});
+onScrollHead();
+
+/* ---------- Custom cursor ---------- */
+if (window.matchMedia('(hover:hover) and (pointer:fine)').matches && !reduced) {
+  document.body.classList.add('cursor-on');
+  var cur = $('#cursor'), cx = -100, cy = -100, tx = cx, ty = cy;
+  document.addEventListener('mousemove', function(e){ tx = e.clientX; ty = e.clientY; });
+  (function loop(){
+    cx += (tx - cx) * .2; cy += (ty - cy) * .2;
+    cur.style.transform = 'translate(' + (cx - 5) + 'px,' + (cy - 5) + 'px)';
+    requestAnimationFrame(loop);
+  })();
+  $$('[data-cursor], a, button').forEach(function(el){
+    el.addEventListener('mouseenter', function(){ cur.classList.add('is-active'); });
+    el.addEventListener('mouseleave', function(){ cur.classList.remove('is-active'); });
+  });
+}
+
+/* ---------- Cart ---------- */
+var drawer = $('#drawer'), overlay = $('#drawerOverlay'),
+    drawerList = $('#drawerList'), drawerEmpty = $('#drawerEmpty'),
+    drawerFoot = $('#drawerFoot'), drawerTotal = $('#drawerTotal'),
+    cartBar = $('#cartBar'), cartBarTotal = $('#cartBarTotal'),
+    cartBarCount = $('#cartBarCount'), headCount = $('#headCartCount');
+
+function cartTotals(){
+  var sum = 0, count = 0;
+  Object.keys(cart).forEach(function(id){
+    var it = cart[id];
+    if (it && it.qty > 0) { sum += it.price * it.qty; count += it.qty; }
+  });
+  return {sum: sum, count: count};
+}
+
+function renderCart(){
+  var t = cartTotals();
+  headCount.textContent = t.count;
+  cartBarTotal.textContent = fmt(t.sum);
+  cartBarCount.textContent = t.count + ' ' + plural(t.count, 'позиция', 'позиции', 'позиций');
+  cartBar.classList.toggle('is-visible', t.count > 0 && !drawer.classList.contains('is-open'));
+  drawerEmpty.style.display = t.count ? 'none' : 'flex';
+  drawerFoot.hidden = !t.count;
+  drawerTotal.textContent = fmt(t.sum);
+
+  drawerList.innerHTML = '';
+  Object.keys(cart).forEach(function(id){
+    var it = cart[id];
+    if (!it || it.qty <= 0) return;
+    var row = document.createElement('div');
+    row.className = 'cart-item';
+    row.innerHTML =
+      '<img src="' + esc(it.thumb) + '" alt="" loading="lazy">' +
+      '<div><div class="cart-item__name">' + esc(it.title) + '</div>' +
+      '<div class="cart-item__unit">' + fmt(it.price) + ' / шт.</div>' +
+      '<div class="qty"><button data-dec="' + id + '" aria-label="Меньше">−</button><b>' + it.qty + '</b><button data-inc="' + id + '" aria-label="Больше">+</button></div></div>' +
+      '<div class="cart-item__right"><span class="cart-item__sum">' + fmt(it.price * it.qty) + '</span>' +
+      '<button class="cart-item__del" data-del="' + id + '">убрать</button></div>';
+    drawerList.appendChild(row);
+  });
+}
+
+function addItemToCart(item, btn){
+  var id = String(item.id);
+  var cur = cart[id];
+  if (cur) {
+    if (cur.stock != null && cur.qty >= cur.stock) { toast('Больше нет в наличии'); return; }
+    cur.qty++;
+  } else {
+    cart[id] = {id: item.id, title: item.title, price: item.price, qty: 1,
+                thumb: item.thumb, stock: (item.stock == null ? null : item.stock)};
+  }
+  saveCart(); renderCart();
+  haptic('light');
+  toast(item.title + ' — в корзине');
+  if (btn) {
+    btn.classList.add('is-added');
+    setTimeout(function(){ btn.classList.remove('is-added'); }, 900);
+  }
+  if (hasGsap && !reduced) {
+    gsap.fromTo(headCount, {scale: 1.7}, {scale: 1, duration: .5, ease: 'back.out(3)'});
+  }
+}
+
+document.addEventListener('click', function(e){
+  var addBtn = e.target.closest('[data-add]');
+  if (addBtn) {
+    var slug = addBtn.getAttribute('data-add');
+    var cat = CATALOG[slug];
+    if (cat && cat.itemsCount > 0) {
+      /* каталог загружен — сначала выбираем сорт по фото */
+      toggleVariants(slug, true);
+      toast('Выберите сорт по фото');
+    } else {
+      var f = FALLBACK[slug];
+      if (f) addItemToCart({id: 'cat_' + slug, title: f.name, price: f.price, thumb: f.img, stock: null}, addBtn);
+    }
+    return;
+  }
+  var vToggle = e.target.closest('[data-vtoggle]');
+  if (vToggle) { toggleVariants(vToggle.getAttribute('data-vtoggle')); return; }
+  var vAdd = e.target.closest('[data-vadd]');
+  if (vAdd) {
+    if (vAdd.disabled) return;
+    var vi = ITEM_INDEX[vAdd.getAttribute('data-vadd')];
+    if (vi) addItemToCart(vi, vAdd);
+    return;
+  }
+  var zoom = e.target.closest('[data-zoom]');
+  if (zoom) {
+    var zi = ITEM_INDEX[zoom.getAttribute('data-zoom')];
+    if (zi && zi.photo) { lightboxImg.src = zi.photo; lightbox.classList.add('is-open'); haptic('light'); }
+    return;
+  }
+  var inc = e.target.closest('[data-inc]');
+  if (inc) {
+    var i1 = inc.getAttribute('data-inc'), it1 = cart[i1];
+    if (it1) {
+      if (it1.stock != null && it1.qty >= it1.stock) { toast('Больше нет в наличии'); return; }
+      it1.qty++; saveCart(); renderCart(); haptic('light');
+    }
+    return;
+  }
+  var dec = e.target.closest('[data-dec]');
+  if (dec) { var i2 = dec.getAttribute('data-dec'); if (cart[i2]) { cart[i2].qty = Math.max(0, cart[i2].qty - 1); if (!cart[i2].qty) delete cart[i2]; } saveCart(); renderCart(); haptic('light'); return; }
+  var del = e.target.closest('[data-del]');
+  if (del) { delete cart[del.getAttribute('data-del')]; saveCart(); renderCart(); haptic('light'); return; }
+});
+
+/* drawer open/close */
+function openDrawer(){
+  showView('cart');
+  drawer.classList.add('is-open'); overlay.classList.add('is-open');
+  cartBar.classList.remove('is-visible');
+  document.body.style.overflow = 'hidden';
+  document.body.style.touchAction = 'none';
+  if (lenis) lenis.stop();
+}
+function closeDrawer(){
+  drawer.classList.remove('is-open'); overlay.classList.remove('is-open');
+  document.body.style.overflow = '';
+  document.body.style.touchAction = '';
+  if (lenis) lenis.start();
+  renderCart();
+}
+$('#headCartBtn').addEventListener('click', openDrawer);
+$('#cartBarBtn').addEventListener('click', openDrawer);
+$('#drawerClose').addEventListener('click', closeDrawer);
+overlay.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') {
+    if (lightbox.classList.contains('is-open')) { lightbox.classList.remove('is-open'); lightboxImg.removeAttribute('src'); return; }
+    closeDrawer();
+  }
+});
+
+/* ---------- Checkout: форма → POST /api/orders ---------- */
+var viewCart = $('#viewCart'), viewForm = $('#viewForm'), viewSuccess = $('#viewSuccess'),
+    drawerTitle = $('#drawerTitle'), formProblems = $('#formProblems');
+var submitting = false, profileLoaded = false;
+
+function showView(name){
+  viewCart.hidden = name !== 'cart';
+  viewForm.hidden = name !== 'form';
+  viewSuccess.hidden = name !== 'success';
+  drawerTitle.textContent = name === 'form' ? 'Оформление' : name === 'success' ? 'Заказ принят' : 'Корзина';
+}
+
+function fieldVal(id){ return document.getElementById(id).value.trim(); }
+function markError(id, on){ document.getElementById(id).classList.toggle('is-error', !!on); }
+function showProblems(list){
+  if (!list.length) { formProblems.classList.remove('is-show'); formProblems.innerHTML = ''; return; }
+  formProblems.innerHTML = list.map(esc).join('<br>');
+  formProblems.classList.add('is-show');
+}
+
+function updateFormSum(){
+  var t = cartTotals();
+  var note = $('#formDeliveryNote');
+  if (CONFIG.delivery_cost != null) {
+    $('#formSum').textContent = fmt(t.sum + CONFIG.delivery_cost);
+    note.textContent = 'Товары: ' + fmt(t.sum) + ' + доставка 5Post: ' + fmt(CONFIG.delivery_cost) + '.';
+  } else {
+    $('#formSum').textContent = fmt(t.sum);
+    note.textContent = 'Доставку посчитаем при подтверждении заказа.';
+  }
+}
+
+function prefillProfile(){
+  if (profileLoaded || !tg || !tg.initData) return;
+  profileLoaded = true;
+  fetch('/api/profile?init_data=' + encodeURIComponent(tg.initData))
+    .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(p){
+      if (p.full_name && !fieldVal('inName')) document.getElementById('inName').value = p.full_name;
+      if (p.phone && !fieldVal('inPhone')) document.getElementById('inPhone').value = p.phone;
+      if (p.city && !fieldVal('inCity')) document.getElementById('inCity').value = p.city;
+      if (p.pickup_point && !fieldVal('inPoint')) document.getElementById('inPoint').value = p.pickup_point;
+    })
+    .catch(function(){});
+}
+
+$('#checkoutBtn').addEventListener('click', function(){
+  var t = cartTotals();
+  if (!t.count) return;
+  haptic('medium');
+  showProblems([]);
+  updateFormSum();
+  showView('form');
+  prefillProfile();
+});
+
+$('#backToCartBtn').addEventListener('click', function(){ showView('cart'); });
+
+$('#submitOrderBtn').addEventListener('click', function(){
+  if (submitting) return;
+  var name = fieldVal('inName'), phone = fieldVal('inPhone'),
+      city = fieldVal('inCity'), point = fieldVal('inPoint'),
+      comment = fieldVal('inComment');
+  var problems = [];
+  markError('fName', !name);
+  if (!name) problems.push('Укажите ФИО');
+  var digits = phone.replace(/\D/g, '');
+  markError('fPhone', digits.length < 10);
+  if (digits.length < 10) problems.push('Телефон — минимум 10 цифр');
+  markError('fCity', !city);
+  if (!city) problems.push('Укажите город');
+  markError('fPoint', !point);
+  if (!point) problems.push('Укажите пункт выдачи 5Post');
+
+  var items = [];
+  Object.keys(cart).forEach(function(id){
+    var it = cart[id];
+    if (!it || it.qty <= 0) return;
+    var iid = parseInt(id, 10);
+    if (!isNaN(iid)) items.push({item_id: iid, quantity: it.qty});
+  });
+  if (!items.length) problems.unshift('Каталог не загрузился с сервера — оформление недоступно. Напишите нам в бота: @' + CONFIG.bot_username);
+  if (problems.length) { showProblems(problems); haptic('medium'); return; }
+  showProblems([]);
+
+  var body = {items: items, full_name: name, phone: phone, city: city,
+              pickup_point: point, comment: comment || null};
+  try { var rc = localStorage.getItem('ref_code'); if (rc) body.ref_code = rc; } catch(e){}
+  if (tg && tg.initData) body.init_data = tg.initData;
+
+  submitting = true;
+  var btn = $('#submitOrderBtn');
+  btn.classList.add('is-loading');
+  btn.textContent = 'Отправляем…';
+  fetch('/api/orders', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  })
+  .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, data: d}; }); })
+  .then(function(res){
+    submitting = false;
+    btn.classList.remove('is-loading');
+    btn.textContent = 'Подтвердить заказ';
+    if (!res.ok) {
+      var det = res.data && res.data.detail;
+      showProblems(Array.isArray(det) ? det : [typeof det === 'string' ? det : 'Не удалось оформить заказ. Попробуйте ещё раз.']);
+      haptic('medium');
+      return;
+    }
+    cart = {}; saveCart(); renderCart();
+    renderSuccess(res.data);
+    showView('success');
+    haptic('medium');
+  })
+  .catch(function(){
+    submitting = false;
+    btn.classList.remove('is-loading');
+    btn.textContent = 'Подтвердить заказ';
+    showProblems(['Нет соединения с сервером. Проверьте интернет и попробуйте ещё раз.']);
+  });
+});
+
+function renderSuccess(d){
+  var mgr = d.manager_contact || ('@' + CONFIG.bot_username);
+  $('#successBody').innerHTML =
+    '<p class="ok-big">Заказ №' + d.order_id + ' принят</p>' +
+    '<p class="form-hint">Мы проверим наличие и свяжемся с вами. Заказ ждёт предоплату.</p>' +
+    '<div class="ok-rows">' +
+    '<div class="ok-row"><span>Итого с доставкой</span><b>' + fmt(d.total_cost) + '</b></div>' +
+    '<div class="ok-row"><span>Предоплата 30%</span><b>' + fmt(d.prepayment) + '</b></div>' +
+    '<div class="ok-row"><span>Остаток при получении</span><b>' + fmt(d.remainder) + '</b></div>' +
+    '</div>' +
+    (d.payment_requisites ? '<div class="ok-req">' + esc(d.payment_requisites) + '</div>' : '') +
+    '<p class="form-hint">Пришлите чек менеджеру ' + esc(mgr) + ' — так мы быстрее подтвердим заказ.</p>';
+}
+
+$('#successBackBtn').addEventListener('click', function(){
+  closeDrawer();
+  showView('cart');
+});
+
+/* ---------- Lightbox ---------- */
+var lightbox = $('#lightbox'), lightboxImg = $('#lightboxImg');
+lightbox.addEventListener('click', function(){
+  lightbox.classList.remove('is-open');
+  lightboxImg.removeAttribute('src');
+});
+
+/* ---------- Каталог из API + аккордеон «Выбрать по фото» ---------- */
+/* Инъекция аккордеона в каждую карточку категории (layout карточек не меняем) */
+$$('.plant').forEach(function(article){
+  var slug = article.getAttribute('data-id');
+  var body = article.querySelector('.plant__body');
+  if (!body) return;
+  var toggle = document.createElement('button');
+  toggle.className = 'variants-toggle';
+  toggle.setAttribute('data-vtoggle', slug);
+  toggle.setAttribute('data-cursor', '');
+  toggle.innerHTML = '<span class="vt-label">Выбрать по фото</span><span class="vt-caret">↓</span>';
+  var wrap = document.createElement('div');
+  wrap.className = 'variants-wrap';
+  var box = document.createElement('div');
+  box.className = 'variants';
+  box.id = 'variants-' + slug;
+  wrap.appendChild(toggle);
+  wrap.appendChild(box);
+  article.appendChild(wrap);
+});
+
+function setVariantsHeight(slug){
+  var box = document.getElementById('variants-' + slug);
+  if (box && box.classList.contains('is-open')) box.style.height = box.scrollHeight + 'px';
+}
+
+function toggleVariants(slug, forceOpen){
+  var box = document.getElementById('variants-' + slug);
+  var toggle = document.querySelector('[data-vtoggle="' + slug + '"]');
+  if (!box || !toggle) return;
+  var willOpen = forceOpen != null ? forceOpen : !box.classList.contains('is-open');
+  if (willOpen) {
+    box.classList.add('is-open');
+    toggle.classList.add('is-open');
+    box.style.height = box.scrollHeight + 'px';
+    loadCategory(slug);
+    haptic('light');
+  } else {
+    box.style.height = box.scrollHeight + 'px';
+    requestAnimationFrame(function(){ box.style.height = '0px'; });
+    box.classList.remove('is-open');
+    toggle.classList.remove('is-open');
+  }
+}
+
+function loadCategory(slug){
+  var cat = CATALOG[slug];
+  var box = document.getElementById('variants-' + slug);
+  if (!cat) {
+    box.innerHTML = '<div class="variants__note">Каталог временно недоступен — напишите нам в бота: @' + esc(CONFIG.bot_username) + '</div>';
+    setVariantsHeight(slug);
+    return;
+  }
+  if (cat.loaded || cat.loading) return;
+  cat.loading = true;
+  fetch('/api/catalog/' + cat.apiSlug)
+    .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function(data){
+      cat.loaded = true; cat.loading = false;
+      cat.items = data.items || [];
+      renderVariants(slug);
+      updateCardFromItems(slug);
+      setVariantsHeight(slug);
+    })
+    .catch(function(){
+      cat.loading = false;
+      box.innerHTML = '<div class="variants__note">Не удалось загрузить позиции. Попробуйте открыть ещё раз.</div>';
+      setVariantsHeight(slug);
+    });
+}
+
+var CATEGORY_SINGULAR = {pion:'Пион', liliya:'Лилия', floks:'Флокс', hosta:'Хоста', gortenziya:'Гортензия', hrizantema:'Хризантема', luk:'Декоративный лук'};
+
+function renderVariants(slug){
+  var cat = CATALOG[slug];
+  var box = document.getElementById('variants-' + slug);
+  if (!cat || !box) return;
+  if (!cat.items.length) {
+    box.innerHTML = '<div class="variants__note">Скоро добавим позиции — спросите в боте: @' + esc(CONFIG.bot_username) + '</div>';
+    return;
+  }
+  /* сортировка: сначала растения, потом посадочный материал; внутри группы по photo_number */
+  var sorted = cat.items.slice().sort(function(a,b){
+    if (a.kind === b.kind) return a.photo_number - b.photo_number;
+    return a.kind === 'sapling' ? 1 : -1;
+  });
+  var html = '<div class="variants__grid">';
+  sorted.forEach(function(it, idx){
+    ITEM_INDEX[it.id] = it;
+    var isSapling = it.kind === 'sapling';
+    var out = !isSapling && !(it.stock > 0);
+    var displayNumber = idx + 1;
+    var kindName = CATEGORY_SINGULAR[slug] || cat.name;
+    var displayTitle = kindName + ' №' + displayNumber;
+    html +=
+      '<div class="variant' + (out ? ' is-out' : '') + (isSapling ? ' is-sapling' : '') + '">' +
+      '<div class="variant__fig" data-zoom="' + it.id + '" data-cursor><img src="' + esc(it.thumb) + '" alt="' + esc(displayTitle) + '" loading="lazy"></div>' +
+      '<div class="variant__body">' +
+      '<div class="variant__title">' + esc(displayTitle) + '</div>' +
+      '<div class="variant__stock">' + (isSapling ? '&nbsp;' : (out ? 'нет в наличии' : 'осталось ' + it.stock + ' шт.')) + '</div>' +
+      '<div class="variant__foot">' +
+      (isSapling
+        ? '<span class="variant__note">посадочный материал</span>'
+        : '<span class="variant__price">' + fmt(it.price) + '</span>' +
+          '<button class="variant__add" data-vadd="' + it.id + '"' + (out ? ' disabled' : '') + ' aria-label="В корзину">+</button>') +
+      '</div>' +
+      '</div></div>';
+  });
+  html += '</div>';
+  box.innerHTML = html;
+}
+
+function updateCardFromItems(slug){
+  var cat = CATALOG[slug];
+  var article = document.querySelector('.plant[data-id="' + slug + '"]');
+  if (!cat || !article || !cat.items.length) return;
+  var min = Infinity, max = 0, inStock = false;
+  cat.items.forEach(function(it){
+    if (it.price < min) min = it.price;
+    if (it.price > max) max = it.price;
+    if (it.stock > 0) inStock = true;
+  });
+  var b = article.querySelector('.plant__price b');
+  if (b && min !== Infinity) b.textContent = (max > min ? 'от ' : '') + fmt(min);
+  var badge = article.querySelector('.plant__badge');
+  if (badge) {
+    badge.textContent = inStock ? 'В наличии' : 'Спросите в боте';
+    badge.classList.toggle('is-muted', !inStock);
+  }
+}
+
+/* Первичная загрузка каталога: цены, счётчики вариантов. При ошибке — fallback-карточки */
+fetch('/api/catalog')
+  .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(function(data){
+    var apiToSite = {};
+    Object.keys(SLUG_TO_API).forEach(function(s){ apiToSite[SLUG_TO_API[s]] = s; });
+    (data.categories || []).forEach(function(c){
+      var site = apiToSite[c.slug];
+      if (!site) return;
+      CATALOG[site] = {apiSlug: c.slug, name: c.name, itemsCount: c.items_count,
+                       loaded: false, loading: false, items: []};
+      var article = document.querySelector('.plant[data-id="' + site + '"]');
+      if (!article) return;
+      if (c.default_price != null) {
+        var b = article.querySelector('.plant__price b');
+        if (b) b.textContent = fmt(c.default_price);
+      }
+      var lbl = article.querySelector('.vt-label');
+      if (lbl) lbl.textContent = 'Выбрать по фото · ' + c.items_count + ' ' +
+        plural(c.items_count, 'вариант', 'варианта', 'вариантов');
+    });
+  })
+  .catch(function(){ /* офлайн: остаются захардкоженные карточки */ });
+
+/* Публичный конфиг: доставка, менеджер */
+fetch('/api/config')
+  .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(function(cfg){
+    if (cfg.delivery_cost != null) CONFIG.delivery_cost = cfg.delivery_cost;
+    if (cfg.manager_contact) CONFIG.manager_contact = cfg.manager_contact;
+    if (cfg.bot_username) CONFIG.bot_username = cfg.bot_username;
+  })
+  .catch(function(){});
+
+/* ---------- Реферальный код сотрудника ---------- */
+function captureRef(){
+  try {
+    if (localStorage.getItem('ref_code')) return; /* первый источник побеждает */
+    var code = '';
+    var m = /[?&]ref=([^&]+)/.exec(location.search);
+    if (m) code = decodeURIComponent(m[1]);
+    var source = 'site';
+    if (!code && tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+      var sp = String(tg.initDataUnsafe.start_param);
+      if (sp.indexOf('ref_') === 0) { code = sp.slice(4); source = 'miniapp'; }
+    }
+    if (code) {
+      localStorage.setItem('ref_code', code);
+      /* фиксируем переход для статистики менеджера */
+      fetch('/api/track/visit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ref_code: code, source: source})
+      }).catch(function(){});
+    }
+  } catch(e){}
+}
+captureRef(); /* URL-параметр */
+
+/* ---------- Ссылка «Мои клиенты» для сотрудников ---------- */
+function checkEmployee(){
+  if (!tg || !tg.initData) return;
+  fetch('/api/employee/stats?init_data=' + encodeURIComponent(tg.initData))
+    .then(function(r){
+      if (r.ok) { var l = document.getElementById('meLink'); if (l) l.hidden = false; }
+    })
+    .catch(function(){});
+}
+
+renderCart();
+})();
+</script>
+</body>
+</html>

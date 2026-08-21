@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F3EEE1">
+<title>Мой кабинет — Питомник</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F3EEE1;
+  --cream-2:#EBE4D1;
+  --ink:#0B3B17;
+  --ink-60:rgba(11,59,23,.6);
+  --ink-40:rgba(11,59,23,.4);
+  --coral:#E14B63;
+  --coral-deep:#BC2F47;
+  --line:rgba(11,59,23,.16);
+  --serif:'Cormorant',Georgia,serif;
+  --sans:'Manrope',-apple-system,'Segoe UI',sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:var(--sans);background:var(--cream);color:var(--ink);
+  font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input{font-family:inherit;font-size:14px;color:var(--ink)}
+
+/* ============ HEADER ============ */
+.head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:calc(14px + var(--sat)) 20px 14px;
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.02em;font-size:15px}
+.brand svg{width:26px;height:26px;flex:none}
+.head-title{
+  font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-40);
+}
+.btn-out{
+  font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:10px 18px;border:1px solid var(--ink-40);border-radius:100px;
+  transition:background .3s,color .3s,border-color .3s;
+}
+.btn-out:hover{background:var(--coral);border-color:var(--coral);color:var(--cream)}
+
+.wrap{max-width:1080px;margin:0 auto;padding:36px 20px calc(56px + var(--sab))}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,7vw,52px);line-height:1.05;letter-spacing:-.01em;margin-bottom:6px}
+h1 em{font-style:italic;color:var(--coral)}
+.sub{color:var(--ink-60);font-size:14px;margin-bottom:8px}
+
+.sec-title{
+  font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--ink-40);margin:40px 0 14px;
+}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sec-head .sec-title{margin-bottom:0}
+
+/* ============ LINKS ============ */
+.link-row{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  padding:14px 0;border-top:1px solid var(--line);
+}
+.link-row:last-of-type{border-bottom:1px solid var(--line)}
+.link-row__label{font-weight:700;font-size:14px}
+.link-row__url{font-size:12px;color:var(--ink-40);word-break:break-all;margin-top:2px}
+.copy-btn{
+  flex:none;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:10px 18px;border:1px solid var(--ink-40);border-radius:100px;
+  transition:background .3s,color .3s,border-color .3s;
+}
+.copy-btn:hover{background:var(--coral);border-color:var(--coral);color:var(--cream)}
+.copy-btn.is-ok{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+
+/* ============ STATS ============ */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat{
+  border:1px solid var(--line);border-radius:16px;padding:18px 14px;text-align:center;
+  background:var(--cream-2);
+}
+.stat b{display:block;font-family:var(--serif);font-weight:600;font-size:clamp(22px,4vw,32px);font-variant-numeric:tabular-nums;line-height:1.15}
+.stat span{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-40)}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* ============ TABLES ============ */
+.table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--cream-2);margin-top:14px}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th{
+  font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-40);
+  text-align:left;padding:14px 12px;border-bottom:1px solid var(--line);white-space:nowrap;
+}
+td{padding:12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td .muted{color:var(--ink-40)}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+.badge{
+  display:inline-block;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 10px;border-radius:100px;border:1px solid var(--line);white-space:nowrap;
+}
+.badge--src{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.badge--status{color:var(--coral-deep);border-color:var(--coral)}
+.empty{padding:34px 16px;text-align:center;color:var(--ink-40);font-size:14px}
+
+/* ============ BUTTONS ============ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:12px 24px;border-radius:100px;background:var(--ink);color:var(--cream);
+  transition:background .3s;
+}
+.btn:hover{background:var(--coral)}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* ============ PROFILE ============ */
+.profile{
+  border:1px solid var(--line);border-radius:16px;background:var(--cream-2);
+  padding:8px 22px;
+}
+.profile__row{
+  display:flex;justify-content:space-between;gap:16px;padding:12px 0;
+  border-top:1px solid var(--line);font-size:14px;
+}
+.profile__row:first-child{border-top:none}
+.profile__k{color:var(--ink-40);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;align-self:center}
+.profile__v{font-weight:600;text-align:right;word-break:break-all}
+
+/* ============ LOGIN ============ */
+.login{
+  max-width:380px;margin:60px auto 0;border:1px solid var(--line);border-radius:20px;
+  background:var(--cream-2);padding:30px 26px;
+}
+.login h2{font-family:var(--serif);font-weight:500;font-size:30px;margin-bottom:4px}
+.login .sub{margin-bottom:20px}
+.login .field{margin-bottom:12px}
+.login label{display:block;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-40);margin-bottom:6px}
+.login input{
+  width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;
+  background:var(--cream);outline:none;transition:border-color .3s;
+}
+.login input:focus{border-color:var(--ink)}
+.login .btn{width:100%;margin-top:6px}
+.login-err{font-size:13px;color:var(--coral-deep);margin-top:10px;min-height:18px;text-align:center}
+
+/* ============ TOAST ============ */
+#toast{
+  position:fixed;left:50%;bottom:calc(28px + var(--sab));z-index:70;
+  transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--cream);font-size:13px;font-weight:600;
+  padding:12px 22px;border-radius:100px;max-width:90vw;text-align:center;
+  transition:transform .4s var(--ease),opacity .4s;
+}
+#toast.is-show{transform:translate(-50%,0);opacity:1}
+</style>
+</head>
+<body>
+
+<header class="head">
+  <a class="brand" href="/">
+    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M24 44C24 44 8 34 8 20C8 11 15 4 24 4C33 4 40 11 40 20C40 34 24 44 24 44Z" stroke="currentColor" stroke-width="2.4"/>
+      <path d="M24 44V14M24 22C24 22 19 20 17 15M24 28C24 28 30 26 32 19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    Питомник
+  </a>
+  <span class="head-title">Мой кабинет</span>
+  <button class="btn-out" id="btnLogout" hidden>Выйти</button>
+</header>
+
+<main class="wrap">
+
+  <!-- ======= LOGIN ======= -->
+  <section id="viewLogin" hidden>
+    <form class="login" id="loginForm" novalidate>
+      <h2>Вход в кабинет</h2>
+      <p class="sub">Логин и пароль сотрудника питомника.</p>
+      <div class="field">
+        <label for="loginUser">Логин</label>
+        <input id="loginUser" type="text" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">Пароль</label>
+        <input id="loginPass" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn" type="submit" id="loginBtn">Войти</button>
+      <div class="login-err" id="loginErr"></div>
+    </form>
+  </section>
+
+  <!-- ======= CABINET ======= -->
+  <section id="viewCabinet" hidden>
+    <h1>Мой <em>кабинет</em></h1>
+    <p class="sub" id="helloLine"></p>
+
+    <div class="sec-title">Мои реферальные ссылки</div>
+    <div id="linksBox"></div>
+
+    <div class="sec-title">Статистика</div>
+    <div class="stats">
+      <div class="stat"><b id="stVisits">—</b><span>переходов</span></div>
+      <div class="stat"><b id="stClients">—</b><span>клиентов</span></div>
+      <div class="stat"><b id="stOrders">—</b><span>заказов</span></div>
+      <div class="stat"><b id="stSum">—</b><span>сумма</span></div>
+    </div>
+    <div class="table-scroll">
+      <table style="min-width:420px">
+        <thead><tr><th>Источник</th><th class="num">Переходы</th><th class="num">Заказы</th><th class="num">Сумма</th></tr></thead>
+        <tbody id="srcBody"></tbody>
+      </table>
+    </div>
+
+    <div class="sec-head" style="margin-top:40px">
+      <div class="sec-title" style="margin-top:0">Мои клиенты</div>
+      <button class="btn" id="btnExport">Выгрузить в Excel</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>ФИО</th><th>Телефон</th><th>Telegram</th><th>Источник</th>
+            <th>Регистрация</th><th class="num">Заказов</th><th class="num">Сумма</th>
+          </tr>
+        </thead>
+        <tbody id="clientsBody">
+          <tr><td colspan="7" class="empty">Загрузка…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec-title">Заказы клиентов</div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>№</th><th>Дата</th><th>Статус</th><th>Клиент</th><th>Телефон</th>
+            <th>Город</th><th class="num">Сумма</th><th>Источник</th><th>Трек-номер</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody">
+          <tr><td colspan="9" class="empty">Загрузка…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sec-title">Мой профиль</div>
+    <div class="profile" id="profileBox"></div>
+  </section>
+</main>
+
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+
+var TOKEN_KEY = 'nursery_cabinet_token';
+var token = localStorage.getItem(TOKEN_KEY) || '';
+var currentUser = null;
+
+var $ = function(id){ return document.getElementById(id); };
+var toastEl = $('toast'), toastTimer = null;
+
+var SOURCE_LABELS = {bot: 'Бот', miniapp: 'Мини-ап', site: 'Сайт'};
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ toastEl.classList.remove('is-show'); }, 2400);
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function fmt(n){ return Number(n || 0).toLocaleString('ru-RU') + ' ₽'; }
+function srcLabel(s){ return SOURCE_LABELS[s] || s || '—'; }
+
+/* ---------- API ---------- */
+function api(path, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({}, opts.headers);
+  if (opts.body && typeof opts.body !== 'string') {
+    opts.body = JSON.stringify(opts.body);
+    opts.headers['Content-Type'] = 'application/json';
+  }
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  return fetch(path, opts).then(function(r){
+    if (r.status === 401) {
+      showLogin();
+      throw new Error('unauthorized');
+    }
+    return r.json().then(function(data){
+      if (!r.ok) throw new Error(data.detail || ('Ошибка ' + r.status));
+      return data;
+    });
+  });
+}
+function showErr(err){
+  if (err.message !== 'unauthorized') toast(err.message || 'Ошибка запроса');
+}
+
+/* ---------- Views ---------- */
+function showLogin(msg){
+  $('viewCabinet').hidden = true;
+  $('viewLogin').hidden = false;
+  $('btnLogout').hidden = true;
+  if (msg) $('loginErr').textContent = msg;
+}
+function showCabinet(me){
+  currentUser = me;
+  $('viewLogin').hidden = true;
+  $('viewCabinet').hidden = false;
+  $('btnLogout').hidden = false;
+  $('helloLine').textContent = 'Здравствуйте, ' + me.name + '! Делитесь ссылками — заказы по ним привяжутся к вам.';
+  renderProfile(me);
+  loadLinks();
+  loadStats();
+  loadClients();
+  loadOrders();
+}
+
+/* ---------- Auth ---------- */
+$('loginForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  var u = $('loginUser').value.trim(), p = $('loginPass').value;
+  $('loginErr').textContent = '';
+  if (!u || !p) { $('loginErr').textContent = 'Введите логин и пароль'; return; }
+  $('loginBtn').disabled = true;
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({username: u, password: p})
+  }).then(function(r){
+    return r.json().then(function(data){
+      if (!r.ok) throw new Error(data.detail || 'Ошибка входа');
+      return data;
+    });
+  }).then(function(data){
+    if (data.role !== 'manager' && data.role !== 'admin') {
+      throw new Error('Нет доступа к кабинету');
+    }
+    token = data.token;
+    localStorage.setItem(TOKEN_KEY, token);
+    return api('/api/auth/me').then(showCabinet);
+  }).catch(function(err){
+    if (err.message !== 'unauthorized') $('loginErr').textContent = err.message;
+  }).finally(function(){
+    $('loginBtn').disabled = false;
+  });
+});
+
+$('btnLogout').addEventListener('click', function(){
+  fetch('/api/auth/logout?session_token=' + encodeURIComponent(token), {method: 'POST'})
+    .catch(function(){}).finally(function(){
+      token = '';
+      localStorage.removeItem(TOKEN_KEY);
+      showLogin();
+    });
+});
+
+/* ---------- Links ---------- */
+function loadLinks(){
+  api('/api/cabinet/links').then(function(data){
+    var box = $('linksBox');
+    var links = data.links || {};
+    var keys = ['bot', 'miniapp', 'site'].filter(function(k){ return links[k]; });
+    if (!keys.length) {
+      box.innerHTML = '<div class="empty">Ссылки пока не настроены</div>';
+      return;
+    }
+    box.innerHTML = keys.map(function(k){
+      return '<div class="link-row"><div>' +
+        '<div class="link-row__label">' + SOURCE_LABELS[k] + '</div>' +
+        '<div class="link-row__url">' + esc(links[k]) + '</div></div>' +
+        '<button class="copy-btn" data-copy="' + esc(links[k]) + '">Копировать</button></div>';
+    }).join('');
+  }).catch(showErr);
+}
+
+/* ---------- Stats ---------- */
+function loadStats(){
+  api('/api/cabinet/stats').then(function(data){
+    var t = data.totals || {};
+    $('stVisits').textContent = t.visits != null ? t.visits : 0;
+    $('stClients').textContent = t.clients != null ? t.clients : 0;
+    $('stOrders').textContent = t.orders != null ? t.orders : 0;
+    $('stSum').textContent = fmt(t.sum);
+
+    var visits = data.visits_by_source || {};
+    var orders = data.orders_by_source || {};
+    var sums = data.sum_by_source || {};
+    var sources = ['bot', 'miniapp', 'site'];
+    // добавим нестандартные источники, если они есть
+    Object.keys(orders).forEach(function(k){ if (sources.indexOf(k) === -1) sources.push(k); });
+    $('srcBody').innerHTML = sources.map(function(k){
+      return '<tr><td><span class="badge badge--src">' + esc(srcLabel(k)) + '</span></td>' +
+        '<td class="num">' + (visits[k] || 0) + '</td>' +
+        '<td class="num">' + (orders[k] || 0) + '</td>' +
+        '<td class="num">' + fmt(sums[k]) + '</td></tr>';
+    }).join('');
+  }).catch(showErr);
+}
+
+/* ---------- Clients ---------- */
+function loadClients(){
+  api('/api/cabinet/clients').then(function(data){
+    var list = data.clients || [];
+    var body = $('clientsBody');
+    if (!list.length) {
+      body.innerHTML = '<tr><td colspan="7" class="empty">Пока пусто — поделитесь своей ссылкой</td></tr>';
+      return;
+    }
+    body.innerHTML = list.map(function(c){
+      var tg = c.username
+        ? '<a href="https://t.me/' + esc(c.username) + '" target="_blank" rel="noopener">@' + esc(c.username) + '</a>'
+        : (c.telegram_id != null ? esc(c.telegram_id) : '<span class="muted">—</span>');
+      return '<tr>' +
+        '<td><b>' + esc(c.full_name) + '</b></td>' +
+        '<td>' + (c.phone ? esc(c.phone) : '<span class="muted">—</span>') + '</td>' +
+        '<td>' + tg + '</td>' +
+        '<td><span class="badge badge--src">' + esc(srcLabel(c.source)) + '</span></td>' +
+        '<td>' + (c.created_at ? esc(c.created_at) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="num">' + (c.orders_count || 0) + '</td>' +
+        '<td class="num">' + fmt(c.orders_sum) + '</td>' +
+      '</tr>';
+    }).join('');
+  }).catch(showErr);
+}
+
+/* ---------- Orders ---------- */
+function loadOrders(){
+  api('/api/cabinet/orders').then(function(data){
+    var list = data.orders || [];
+    var body = $('ordersBody');
+    if (!list.length) {
+      body.innerHTML = '<tr><td colspan="9" class="empty">Заказов пока нет</td></tr>';
+      return;
+    }
+    body.innerHTML = list.map(function(o){
+      return '<tr>' +
+        '<td><b>№' + esc(o.id) + '</b></td>' +
+        '<td>' + (o.created_at ? esc(o.created_at) : '<span class="muted">—</span>') + '</td>' +
+        '<td><span class="badge badge--status">' + esc(o.status || '—') + '</span></td>' +
+        '<td>' + (o.full_name ? esc(o.full_name) : '<span class="muted">—</span>') + '</td>' +
+        '<td>' + (o.phone ? esc(o.phone) : '<span class="muted">—</span>') + '</td>' +
+        '<td>' + (o.city ? esc(o.city) : '<span class="muted">—</span>') + '</td>' +
+        '<td class="num">' + fmt(o.total_cost) + '</td>' +
+        '<td><span class="badge badge--src">' + esc(srcLabel(o.source)) + '</span></td>' +
+        '<td>' + (o.track_number ? esc(o.track_number) : '<span class="muted">—</span>') + '</td>' +
+      '</tr>';
+    }).join('');
+  }).catch(showErr);
+}
+
+/* ---------- Export ---------- */
+$('btnExport').addEventListener('click', function(){
+  var btn = this;
+  btn.disabled = true;
+  // Скачиваем через fetch: к window.open нельзя приложить заголовок Authorization.
+  fetch('/api/cabinet/export', {headers: {'Authorization': 'Bearer ' + token}})
+    .then(function(r){
+      if (r.status === 401) { showLogin(); throw new Error('unauthorized'); }
+      if (!r.ok) throw new Error('Не удалось собрать выгрузку');
+      var name = 'clients.xlsx';
+      var disp = r.headers.get('Content-Disposition') || '';
+      var m = disp.match(/filename="?([^";]+)"?/);
+      if (m) name = m[1];
+      return r.blob().then(function(blob){ return {blob: blob, name: name}; });
+    })
+    .then(function(res){
+      var url = URL.createObjectURL(res.blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = res.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+      toast('Файл скачан');
+    })
+    .catch(showErr)
+    .finally(function(){ btn.disabled = false; });
+});
+
+/* ---------- Profile ---------- */
+function renderProfile(me){
+  var rows = [
+    ['Имя', me.name],
+    ['Логин', me.username || '—'],
+    ['Telegram ID', me.telegram_id != null ? me.telegram_id : '—'],
+    ['Роль', me.role === 'admin' ? 'Админ' : 'Менеджер'],
+    ['Реф-код', me.ref_code || '—']
+  ];
+  $('profileBox').innerHTML = rows.map(function(r){
+    return '<div class="profile__row"><span class="profile__k">' + esc(r[0]) + '</span>' +
+      '<span class="profile__v">' + esc(r[1]) + '</span></div>';
+  }).join('');
+}
+
+/* ---------- Copy ---------- */
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('[data-copy]');
+  if (btn) copyText(btn.getAttribute('data-copy'), btn);
+});
+function copyText(text, btn){
+  function done(){
+    toast('Ссылка скопирована');
+    if (btn) {
+      btn.classList.add('is-ok');
+      btn.textContent = 'Готово';
+      setTimeout(function(){ btn.classList.remove('is-ok'); btn.textContent = 'Копировать'; }, 1500);
+    }
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function(){ legacy(); done(); });
+  } else { legacy(); done(); }
+  function legacy(){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+/* ---------- Init ---------- */
+if (token) {
+  api('/api/auth/me').then(function(me){
+    if (me.role !== 'manager' && me.role !== 'admin') {
+      localStorage.removeItem(TOKEN_KEY);
+      token = '';
+      showLogin('Нет доступа к кабинету');
+      return;
+    }
+    showCabinet(me);
+  }).catch(function(err){
+    if (err.message !== 'unauthorized') showLogin();
+  });
+} else {
+  showLogin();
+}
+})();
+</script>
+</body>
+</html>
