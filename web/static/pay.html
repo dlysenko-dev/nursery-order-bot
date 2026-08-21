@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F3EEE1">
+<title>Оплата заказа — Питомник</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,500;0,600;1,400&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#F3EEE1;
+  --cream-2:#EBE4D1;
+  --ink:#0B3B17;
+  --ink-60:rgba(11,59,23,.6);
+  --ink-14:rgba(11,59,23,.14);
+  --coral:#E14B63;
+  --coral-deep:#BC2F47;
+  --green:#2E9E4F;
+  --line:rgba(11,59,23,.16);
+  --serif:'Cormorant',Georgia,serif;
+  --sans:'Manrope',-apple-system,'Segoe UI',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:var(--sans);
+  background:var(--cream);
+  color:var(--ink);
+  min-height:100vh;
+  padding:24px 16px 48px;
+}
+.wrap{max-width:520px;margin:0 auto}
+h1{font-family:var(--serif);font-weight:600;font-size:32px;line-height:1.1;margin-bottom:6px}
+.sub{color:var(--ink-60);font-size:14px;margin-bottom:24px}
+.card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px;
+  margin-bottom:16px;
+}
+.row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:15px;border-bottom:1px dashed var(--ink-14)}
+.row:last-child{border-bottom:none}
+.row .label{color:var(--ink-60)}
+.row .value{font-weight:600;text-align:right}
+.row .value.done{color:var(--green)}
+.due{font-size:20px;font-weight:800}
+.requisites{
+  white-space:pre-line;
+  font-size:15px;
+  line-height:1.55;
+  background:var(--cream-2);
+  border-radius:12px;
+  padding:14px;
+  margin-top:12px;
+}
+.stage{
+  display:inline-block;
+  font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:4px 12px;border-radius:999px;
+  background:var(--cream-2);color:var(--ink);
+  margin-bottom:10px;
+}
+.stage.paid{background:var(--green);color:#fff}
+.btn{
+  display:block;width:100%;
+  padding:15px;border:none;border-radius:14px;
+  font-family:var(--sans);font-size:16px;font-weight:700;
+  cursor:pointer;transition:transform .15s ease, opacity .15s ease;
+}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--coral);color:#fff}
+.btn-primary:hover{background:var(--coral-deep)}
+.btn[disabled]{opacity:.5;cursor:default}
+.file-label{
+  display:block;text-align:center;
+  border:2px dashed var(--ink-14);border-radius:14px;
+  padding:26px 16px;cursor:pointer;
+  color:var(--ink-60);font-size:14px;font-weight:600;
+  margin-bottom:14px;transition:border-color .15s ease;
+}
+.file-label:hover,.file-label.has-file{border-color:var(--coral);color:var(--ink)}
+.file-label input{display:none}
+.msg{border-radius:14px;padding:16px;font-size:15px;line-height:1.5;margin-top:16px;display:none}
+.msg.ok{display:block;background:#E4F4E9;color:#14612E;border:1px solid #BFE6CB}
+.msg.warn{display:block;background:#FFF4E0;color:#7A5200;border:1px solid #F0DCA8}
+.msg.err{display:block;background:#FDE7EA;color:#8C1D2F;border:1px solid #F5C2CB}
+.msg ul{margin:8px 0 0 18px}
+.contact{font-size:14px;color:var(--ink-60);text-align:center;margin-top:20px}
+.contact a{color:var(--coral-deep)}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Оплата заказа</h1>
+  <div class="sub">Питомник многолетников</div>
+
+  <div id="loading" class="card">Загружаем данные заказа…</div>
+
+  <div id="error" class="msg err"></div>
+
+  <div id="content" class="hidden">
+    <div class="card">
+      <div id="stageBadge" class="stage"></div>
+      <div class="row"><span class="label">Заказ</span><span class="value" id="orderId"></span></div>
+      <div class="row"><span class="label">Итого (с доставкой)</span><span class="value" id="total"></span></div>
+      <div class="row"><span class="label" id="prepayLabel">Предоплата</span><span class="value" id="prepay"></span></div>
+      <div class="row"><span class="label">Остаток</span><span class="value" id="remainder"></span></div>
+      <div class="row"><span class="label">К оплате сейчас</span><span class="value due" id="due"></span></div>
+    </div>
+
+    <div class="card" id="reqCard">
+      <b>Реквизиты для перевода</b>
+      <div class="requisites" id="requisites"></div>
+    </div>
+
+    <div class="card" id="uploadCard">
+      <b>Чек об оплате</b>
+      <p style="font-size:13px;color:var(--ink-60);margin:8px 0 14px">
+        После перевода прикрепите чек (фото, скриншот или PDF из приложения банка).
+        Проверка происходит автоматически — обычно это занимает несколько секунд.
+      </p>
+      <label class="file-label" id="fileLabel">
+        <input type="file" id="fileInput" accept="image/*,.pdf">
+        <span id="fileLabelText">📎 Выбрать файл чека</span>
+      </label>
+      <button class="btn btn-primary" id="sendBtn" disabled>Отправить чек на проверку</button>
+    </div>
+
+    <div id="result" class="msg"></div>
+  </div>
+
+  <div class="contact" id="contact"></div>
+</div>
+
+<script>
+const token = location.pathname.split("/").filter(Boolean).pop();
+const fmt = n => Number(n).toLocaleString("ru-RU", {maximumFractionDigits: 0}) + " ₽";
+let order = null;
+
+async function load() {
+  try {
+    const res = await fetch(`/api/pay/${token}`);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || "Заказ не найден. Проверьте ссылку.");
+    }
+    order = await res.json();
+    render();
+  } catch (e) {
+    document.getElementById("loading").classList.add("hidden");
+    const err = document.getElementById("error");
+    err.textContent = e.message;
+    err.classList.add("err");
+    err.style.display = "block";
+  }
+}
+
+function render() {
+  document.getElementById("loading").classList.add("hidden");
+  document.getElementById("content").classList.remove("hidden");
+
+  document.getElementById("orderId").textContent = "№" + order.order_id;
+  document.getElementById("total").textContent = fmt(order.total_cost);
+  document.getElementById("prepayLabel").textContent = `Предоплата ${order.prepayment_percent}%`;
+  document.getElementById("prepay").textContent = fmt(order.prepayment) + (order.prepayment_paid ? " ✓" : "");
+  document.getElementById("remainder").textContent = fmt(order.remainder) + (order.remainder_paid ? " ✓" : "");
+  document.getElementById("prepay").classList.toggle("done", order.prepayment_paid);
+  document.getElementById("remainder").classList.toggle("done", order.remainder_paid);
+  document.getElementById("requisites").textContent = order.requisites || "Уточните реквизиты у менеджера";
+
+  const badge = document.getElementById("stageBadge");
+  const due = document.getElementById("due");
+
+  if (order.cancelled) {
+    badge.textContent = "Заказ отменён";
+    due.textContent = "—";
+    document.getElementById("uploadCard").classList.add("hidden");
+    document.getElementById("reqCard").classList.add("hidden");
+  } else if (!order.due_kind) {
+    badge.textContent = "Полностью оплачен ✓";
+    badge.classList.add("paid");
+    due.textContent = "0 ₽";
+    document.getElementById("uploadCard").classList.add("hidden");
+    document.getElementById("reqCard").classList.add("hidden");
+  } else {
+    badge.textContent = order.due_kind === "prepayment" ? "Этап 1 из 2 — предоплата" : "Этап 2 из 2 — остаток";
+    due.textContent = fmt(order.due_amount);
+  }
+
+  if (order.manager_contact) {
+    document.getElementById("contact").innerHTML =
+      "Вопросы по оплате: <b>" + escapeHtml(order.manager_contact) + "</b>";
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+const fileInput = document.getElementById("fileInput");
+const fileLabel = document.getElementById("fileLabel");
+const fileLabelText = document.getElementById("fileLabelText");
+const sendBtn = document.getElementById("sendBtn");
+
+fileInput.addEventListener("change", () => {
+  const f = fileInput.files[0];
+  if (f) {
+    fileLabel.classList.add("has-file");
+    fileLabelText.textContent = "📄 " + f.name;
+    sendBtn.disabled = false;
+  } else {
+    fileLabel.classList.remove("has-file");
+    fileLabelText.textContent = "📎 Выбрать файл чека";
+    sendBtn.disabled = true;
+  }
+});
+
+sendBtn.addEventListener("click", async () => {
+  const f = fileInput.files[0];
+  if (!f) return;
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = '<span class="spinner"></span>Проверяем чек…';
+
+  const form = new FormData();
+  form.append("file", f);
+  const result = document.getElementById("result");
+  result.className = "msg";
+
+  try {
+    const res = await fetch(`/api/pay/${token}/receipt`, {method: "POST", body: form});
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Не удалось отправить чек");
+
+    let html = escapeHtml(data.message);
+    if (data.reasons && data.reasons.length) {
+      html += "<ul>" + data.reasons.map(r => "<li>" + escapeHtml(r) + "</li>").join("") + "</ul>";
+    }
+    result.innerHTML = html;
+    result.classList.add(data.result === "auto_approved" ? "ok" : data.result === "rejected" ? "err" : "warn");
+
+    if (data.result === "auto_approved") {
+      setTimeout(load, 1500);  // перечитать заказ: покажет следующий этап или «оплачен»
+    }
+  } catch (e) {
+    result.textContent = e.message;
+    result.classList.add("err");
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = "Отправить чек на проверку";
+  }
+});
+
+load();
+</script>
+</body>
+</html>
