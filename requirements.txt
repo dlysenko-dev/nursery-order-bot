@@ -8,3 +8,7 @@ aiofiles==23.2.1
 openpyxl==3.1.5
 fastapi
 uvicorn[standard]
+python-multipart
+pdfplumber
+pytesseract
+Pillow

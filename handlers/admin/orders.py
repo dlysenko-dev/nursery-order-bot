@@ -71,8 +71,65 @@ async def show_order_card(callback: CallbackQuery) -> None:
     if not order:
         await callback.answer("Заказ не найден", show_alert=True)
         return
-    await callback.message.edit_text(_order_card_text(order), reply_markup=admin_order_card_kb(order_id), parse_mode="Markdown")
+    show_remainder = bool(order.prepayment_paid_at) and not order.remainder_paid_at
+    await callback.message.edit_text(
+        _order_card_text(order),
+        reply_markup=admin_order_card_kb(order_id, show_remainder=show_remainder),
+        parse_mode="Markdown",
+    )
     await callback.answer()
+
+@router.callback_query(F.data.startswith("admin_request_remainder_"))
+async def request_remainder(callback: CallbackQuery, bot: Bot) -> None:
+    """Вторая стадия оплаты: запрашиваем у клиента остаток (70%) после подтверждённой предоплаты."""
+    if not _is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+    order_id = int(callback.data.replace("admin_request_remainder_", ""))
+    order = await get_order_by_id(order_id)
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+    if not order.prepayment_paid_at:
+        await callback.answer("Предоплата ещё не подтверждена — рано запрашивать остаток", show_alert=True)
+        return
+    if order.remainder_paid_at:
+        await callback.answer("Остаток уже оплачен", show_alert=True)
+        return
+    if not order.user or not order.user.telegram_id:
+        await callback.answer("У клиента нет Telegram — свяжитесь с ним по телефону", show_alert=True)
+        return
+
+    from config import DEFAULT_PREPAYMENT_PERCENT, WEBAPP_URL
+    from db.crud import ensure_pay_token, get_payment_requisites, format_requisites_text
+    from keyboards.checkout_kb import remainder_payment_kb
+
+    pay_token = await ensure_pay_token(order_id)
+    pay_url = f"{WEBAPP_URL}/pay/{pay_token}" if WEBAPP_URL and pay_token else None
+    requisites = format_requisites_text(await get_payment_requisites())
+    await log("remainder_requested", order_id=order_id, user_id=callback.from_user.id)
+    try:
+        await bot.send_message(
+            order.user.telegram_id,
+            f"💳 *Оплата остатка по заказу №{order.id}*\n\n"
+            f"Ваш заказ подтверждён и готовится к отправке.\n\n"
+            f"Итого: {order.total_cost:.0f} ₽\n"
+            f"Уже оплачено (предоплата {DEFAULT_PREPAYMENT_PERCENT}%): {order.prepayment:.0f} ₽\n"
+            f"К доплате (остаток): *{order.remainder:.0f} ₽*\n\n"
+            f"Переведите {order.remainder:.0f} ₽ на реквизиты:\n\n{requisites}\n\n"
+            f"После оплаты отправьте чек кнопкой ниже.",
+            reply_markup=remainder_payment_kb(pay_url),
+            parse_mode="Markdown",
+        )
+    except Exception as exc:
+        await callback.answer(f"Не удалось написать клиенту: {exc}", show_alert=True)
+        return
+    await callback.message.edit_text(
+        _order_card_text(order) + "\n\n💰 *Клиенту отправлен запрос на оплату остатка.*",
+        reply_markup=admin_back_kb(),
+        parse_mode="Markdown",
+    )
+    await callback.answer("Запрос остатка отправлен клиенту")
 
 @router.callback_query(F.data.startswith("admin_complete_"))
 async def complete_order(callback: CallbackQuery, bot: Bot) -> None:

@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from web.api import admin, auth, cabinet, catalog, employees, orders
+from web.api import admin, auth, cabinet, catalog, employees, orders, pay
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -24,6 +24,7 @@ app.include_router(cabinet.router, prefix="/api")
 app.include_router(catalog.router, prefix="/api")
 app.include_router(orders.router, prefix="/api")
 app.include_router(employees.router, prefix="/api")
+app.include_router(pay.router, prefix="/api")
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -49,6 +50,14 @@ async def admin_page() -> FileResponse:
 async def cabinet_page() -> FileResponse:
     return FileResponse(
         STATIC_DIR / "cabinet.html",
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
+
+
+@app.get("/pay/{pay_token}", include_in_schema=False)
+async def pay_page(pay_token: str) -> FileResponse:
+    return FileResponse(
+        STATIC_DIR / "pay.html",
         headers={"Cache-Control": "no-store, must-revalidate"},
     )
 

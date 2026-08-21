@@ -23,7 +23,7 @@ class ParsedReceipt:
 _AMOUNT_RE = re.compile(
     r"(?:сумма|перевод|оплата|к\s*оплате|итого)?\s*[:№-]*\s*"
     r"(\d{1,3}(?:[ \u00a0\u202f]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)"
-    r"\s*(?:₽|руб(?:\.|лей|ля)?|RUB|RUR)\b",
+    r"\s*(?:₽|руб(?:\.|лей|ля)?|RUB|RUR)(?![\w.])",
     re.IGNORECASE,
 )
 # --- Дата/время: 21.08.2026, 21.08.2026 14:35, 21.08.2026 в 14:35:01 ---
@@ -93,7 +93,7 @@ def _extract_amount(text: str) -> Decimal | None:
     labeled = re.compile(
         r"(?:сумма|перевод|оплата|к\s*оплате|итого)[^\d]{0,20}"
         r"(\d{1,3}(?:[ \u00a0\u202f]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)"
-        r"\s*(?:₽|руб(?:\.|лей|ля)?|RUB|RUR)\b",
+        r"\s*(?:₽|руб(?:\.|лей|ля)?|RUB|RUR)(?![\w.])",
         re.IGNORECASE,
     )
     for pattern in (labeled, _AMOUNT_RE):
@@ -126,20 +126,20 @@ def _extract_operation_id(text: str) -> str | None:
 
 
 def _extract_recipient(text: str) -> str | None:
+    # Полный номер карты 4x4 — самый надёжный идентификатор
+    m = _CARD_RE.search(text)
+    if m:
+        return m.group(1)
+    # Телефон +7/8 (СБП)
+    m = _PHONE_RE.search(text)
+    if m:
+        return m.group(0)
     # Явная строка «Получатель: ...»
     m = _RECIPIENT_LINE_RE.search(text)
     if m:
         candidate = m.group(1).strip()
         if candidate:
             return candidate
-    # Полный номер карты 4x4
-    m = _CARD_RE.search(text)
-    if m:
-        return m.group(1)
-    # Телефон +7/8
-    m = _PHONE_RE.search(text)
-    if m:
-        return m.group(0)
     # Маскированная карта *1234
     m = _MASKED_CARD_RE.search(text)
     if m:

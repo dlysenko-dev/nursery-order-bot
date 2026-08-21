@@ -18,12 +18,29 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
     name = (filename or "").lower()
     if name.endswith(".pdf"):
         return _extract_pdf(file_bytes)
+    # Текстовый экспорт чека (некоторые банки/клиенты шлют .txt)
+    if name.endswith(".txt"):
+        return _extract_plain(file_bytes)
     # Telegram-фото приходят без имени — считаем их изображениями
     if not name or name.endswith(_IMAGE_EXTENSIONS):
         return _extract_image(file_bytes)
-    # Неизвестный формат: пробуем как изображение, потом как PDF
+    # Неизвестный формат: пробуем как текст, потом изображение, потом PDF
+    text = _extract_plain(file_bytes)
+    if text:
+        return text
     text = _extract_image(file_bytes)
     return text if text else _extract_pdf(file_bytes)
+
+
+def _extract_plain(file_bytes: bytes) -> str:
+    for encoding in ("utf-8", "cp1251"):
+        try:
+            text = file_bytes.decode(encoding).strip()
+            if text:
+                return text
+        except (UnicodeDecodeError, ValueError):
+            continue
+    return ""
 
 
 def _extract_pdf(file_bytes: bytes) -> str:
