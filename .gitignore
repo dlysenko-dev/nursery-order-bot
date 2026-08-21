@@ -37,3 +37,6 @@ pitomnik_deploy.tar.gz
 
 # Media uploads (large)
 media/
+
+# Temporary/source assets
+tmp_avito/
