@@ -57,6 +57,7 @@ def _run_migrations(conn) -> None:
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
     # Уникальный индекс для токена страницы оплаты (ALTER TABLE не умеет UNIQUE)
     conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_orders_pay_token ON orders (pay_token)"))
+    conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_chat_token ON users (chat_token)"))
     _rebuild_users_if_needed(conn)
 
 def _rebuild_users_if_needed(conn) -> None:
@@ -80,16 +81,18 @@ def _rebuild_users_if_needed(conn) -> None:
         "pickup_point VARCHAR(512), "
         "employee_id INTEGER REFERENCES employees(id), "
         "source VARCHAR(32) DEFAULT 'bot', "
+        "chat_token VARCHAR(64), "
         "created_at DATETIME)"
     ))
     conn.execute(text(
         "INSERT INTO users_new "
-        "SELECT id, telegram_id, username, full_name, phone, city, pickup_point, employee_id, source, created_at "
+        "SELECT id, telegram_id, username, full_name, phone, city, pickup_point, employee_id, source, chat_token, created_at "
         "FROM users"
     ))
     conn.execute(text("DROP TABLE users"))
     conn.execute(text("ALTER TABLE users_new RENAME TO users"))
     conn.execute(text("CREATE UNIQUE INDEX ix_users_telegram_id ON users (telegram_id)"))
+    conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_chat_token ON users (chat_token)"))
 
 async def get_session() -> AsyncSession:
     async with AsyncSessionLocal() as session:
