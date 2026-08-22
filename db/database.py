@@ -130,13 +130,13 @@ async def _seed_initial_data() -> None:
     if existing:
         return
     initial_categories = [
-        {"name": "Пионы", "slug": "pion", "default_price": 350, "sort_order": 1},
-        {"name": "Лилии", "slug": "lily", "default_price": 100, "sort_order": 2},
-        {"name": "Флоксы", "slug": "phlox", "default_price": 200, "sort_order": 3},
-        {"name": "Хосты", "slug": "hosta", "default_price": 250, "sort_order": 4},
-        {"name": "Гортензия метельчатая", "slug": "hydrangea", "default_price": 300, "sort_order": 5},
-        {"name": "Хризантема мультифлора", "slug": "chrysanthemum", "default_price": 180, "sort_order": 6},
-        {"name": "Декоративный лук", "slug": "allium", "default_price": 120, "sort_order": 7},
+        {"name": "Пионы", "slug": "pion", "default_price": 535, "sort_order": 1},
+        {"name": "Лилии", "slug": "lily", "default_price": 145, "sort_order": 2},
+        {"name": "Флоксы", "slug": "phlox", "default_price": 310, "sort_order": 3},
+        {"name": "Хосты", "slug": "hosta", "default_price": 324, "sort_order": 4},
+        {"name": "Гортензия метельчатая", "slug": "hydrangea", "default_price": 325, "sort_order": 5},
+        {"name": "Хризантема мультифлора", "slug": "chrysanthemum", "default_price": 260, "sort_order": 6},
+        {"name": "Декоративный лук", "slug": "allium", "default_price": 130, "sort_order": 7},
     ]
     for cat in initial_categories:
         await create_category(**cat)
