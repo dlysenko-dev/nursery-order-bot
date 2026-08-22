@@ -404,7 +404,7 @@ footer{
   opacity:0;pointer-events:none;transition:opacity .4s;
   -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
 }
-.drawer-overlay.is-open{opacity:1;pointer-events:auto}
+.drawer-overlay.is-open{opacity:1;pointer-events:auto;touch-action:none}
 .drawer{
   position:fixed;top:0;right:0;bottom:0;z-index:130;
   width:min(430px,100%);
@@ -413,6 +413,7 @@ footer{
   transform:translateX(102%);transition:transform .55s var(--ease);
   display:flex;flex-direction:column;
   padding-top:var(--sat);
+  touch-action:pan-y; /* вертикальный свайп внутри шторки всегда работает */
 }
 .drawer.is-open{transform:translateX(0)}
 .drawer__head{
@@ -663,7 +664,7 @@ body.hero-safe .hero__media img{transform:none!important}
         <h3>Пионы</h3>
         <p class="plant__desc">Пышное цветение начала лета. Тот самый куст, ради которого заводят сад.</p>
         <div class="plant__row">
-          <div class="plant__price"><b>535 ₽</b><span>/ саженец</span></div>
+          <div class="plant__price"><b>350 ₽</b><span>/ саженец</span></div>
           <button class="add-btn" data-add="pion" data-cursor>
             <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
             <span class="plus">+</span>
@@ -682,7 +683,7 @@ body.hero-safe .hero__media img{transform:none!important}
         <h3>Лилии</h3>
         <p class="plant__desc">Высокие свечи соцветий. Одна луковица — и клумба звучит по-новому.</p>
         <div class="plant__row">
-          <div class="plant__price"><b>145 ₽</b><span>/ луковица</span></div>
+          <div class="plant__price"><b>100 ₽</b><span>/ луковица</span></div>
           <button class="add-btn" data-add="liliya" data-cursor>
             <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
             <span class="plus">+</span>
@@ -701,7 +702,7 @@ body.hero-safe .hero__media img{transform:none!important}
         <h3>Флоксы</h3>
         <p class="plant__desc">Плотные пёстрые шапки и долгое цветение. Классика, которая не надоедает.</p>
         <div class="plant__row">
-          <div class="plant__price"><b>310 ₽</b><span>/ саженец</span></div>
+          <div class="plant__price"><b>200 ₽</b><span>/ саженец</span></div>
           <button class="add-btn" data-add="floks" data-cursor>
             <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
             <span class="plus">+</span>
@@ -720,7 +721,7 @@ body.hero-safe .hero__media img{transform:none!important}
         <h3>Хосты</h3>
         <p class="plant__desc">Декоративная листва для тенистых уголков — там, где другие сдаются.</p>
         <div class="plant__row">
-          <div class="plant__price"><b>324 ₽</b><span>/ саженец</span></div>
+          <div class="plant__price"><b>250 ₽</b><span>/ саженец</span></div>
           <button class="add-btn" data-add="hosta" data-cursor>
             <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
             <span class="plus">+</span>
@@ -739,7 +740,7 @@ body.hero-safe .hero__media img{transform:none!important}
         <h3>Гортензия метельчатая</h3>
         <p class="plant__desc">Метёлки соцветий, которые держат форму до самых заморозков.</p>
         <div class="plant__row">
-          <div class="plant__price"><b>325 ₽</b><span>/ саженец</span></div>
+          <div class="plant__price"><b>300 ₽</b><span>/ саженец</span></div>
           <button class="add-btn" data-add="gortenziya" data-cursor>
             <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
             <span class="plus">+</span>
@@ -758,7 +759,7 @@ body.hero-safe .hero__media img{transform:none!important}
         <h3>Хризантема мультифлора</h3>
         <p class="plant__desc">Шар цвета в конце сезона — когда остальной сад уже пустеет.</p>
         <div class="plant__row">
-          <div class="plant__price"><b>260 ₽</b><span>/ саженец</span></div>
+          <div class="plant__price"><b>180 ₽</b><span>/ саженец</span></div>
           <button class="add-btn" data-add="hrizantema" data-cursor>
             <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
             <span class="plus">+</span>
@@ -777,7 +778,7 @@ body.hero-safe .hero__media img{transform:none!important}
         <h3>Лук декоративный</h3>
         <p class="plant__desc">Фиолетовые шары на высоких стрелках. Вертикаль и графика в цветнике.</p>
         <div class="plant__row">
-          <div class="plant__price"><b>130 ₽</b><span>/ луковица</span></div>
+          <div class="plant__price"><b>120 ₽</b><span>/ луковица</span></div>
           <button class="add-btn" data-add="luk" data-cursor>
             <span class="italicize"><span class="r">В корзину</span><span class="i" aria-hidden="true">В корзину</span></span>
             <span class="plus">+</span>
@@ -949,13 +950,13 @@ function haptic(style){
 var SLUG_TO_API = {pion:'pion', liliya:'lily', floks:'phlox', hosta:'hosta', gortenziya:'hydrangea', hrizantema:'chrysanthemum', luk:'allium'};
 /* Офлайн-fallback: если API недоступен (файл открыт локально) — остаются захардкоженные карточки */
 var FALLBACK = {
-  pion:       {name:'Пионы',                  price:535, unit:'саженец',  img:'/static/assets/img/pion.jpg'},
-  liliya:     {name:'Лилии',                  price:145, unit:'луковица', img:'/static/assets/img/liliya.jpg'},
-  floks:      {name:'Флоксы',                 price:310, unit:'саженец',  img:'/static/assets/img/floks.jpg'},
-  hosta:      {name:'Хосты',                  price:324, unit:'саженец',  img:'/static/assets/img/hosta.jpg'},
-  gortenziya: {name:'Гортензия метельчатая',  price:325, unit:'саженец',  img:'/static/assets/img/gortenziya.jpg'},
-  hrizantema: {name:'Хризантема мультифлора', price:260, unit:'саженец',  img:'/static/assets/img/hrizantema.jpg'},
-  luk:        {name:'Лук декоративный',       price:130, unit:'луковица', img:'/static/assets/img/luk.jpg'}
+  pion:       {name:'Пионы',                  price:350, unit:'саженец',  img:'/static/assets/img/pion.jpg'},
+  liliya:     {name:'Лилии',                  price:100, unit:'луковица', img:'/static/assets/img/liliya.jpg'},
+  floks:      {name:'Флоксы',                 price:200, unit:'саженец',  img:'/static/assets/img/floks.jpg'},
+  hosta:      {name:'Хосты',                  price:250, unit:'саженец',  img:'/static/assets/img/hosta.jpg'},
+  gortenziya: {name:'Гортензия метельчатая',  price:300, unit:'саженец',  img:'/static/assets/img/gortenziya.jpg'},
+  hrizantema: {name:'Хризантема мультифлора', price:180, unit:'саженец',  img:'/static/assets/img/hrizantema.jpg'},
+  luk:        {name:'Лук декоративный',       price:120, unit:'луковица', img:'/static/assets/img/luk.jpg'}
 };
 var CATALOG = {};    /* site slug → {apiSlug, name, itemsCount, loaded, loading, items} */
 var ITEM_INDEX = {}; /* item id → позиция из API */
@@ -1284,13 +1285,12 @@ function openDrawer(){
   drawer.classList.add('is-open'); overlay.classList.add('is-open');
   cartBar.classList.remove('is-visible');
   document.body.style.overflow = 'hidden';
-  document.body.style.touchAction = 'none';
+  /* touch-action на body не трогаем: значение 'none' глушит прокрутку формы внутри drawer на мобильных */
   if (lenis) lenis.stop();
 }
 function closeDrawer(){
   drawer.classList.remove('is-open'); overlay.classList.remove('is-open');
   document.body.style.overflow = '';
-  document.body.style.touchAction = '';
   if (lenis) lenis.start();
   renderCart();
 }
