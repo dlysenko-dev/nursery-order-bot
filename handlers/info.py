@@ -70,7 +70,8 @@ async def contact_manager(callback: CallbackQuery) -> None:
     text = (
         f"📞 *Связь с менеджером*\n\n{contact}\n\n"
         "Напишите нам — ответим в ближайшее время.\n"
-        "Вы также можете оформить заказ самостоятельно через каталог."
+        "Можно прямо здесь: нажмите «Написать сообщение» — менеджер увидит его и ответит в этот чат."
     )
-    await callback.message.edit_text(text, reply_markup=back_to_menu_kb(), parse_mode="Markdown")
+    from handlers.chat import chat_write_kb
+    await callback.message.edit_text(text, reply_markup=chat_write_kb(), parse_mode="Markdown")
     await callback.answer()
