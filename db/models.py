@@ -70,9 +70,25 @@ class User(Base):
     pickup_point = Column(String(512), nullable=True)
     employee_id = Column(Integer, ForeignKey("employees.id"), nullable=True)  # кто привёл клиента
     source = Column(String(32), nullable=True, default="bot")  # bot | miniapp | site
+    site_token = Column(String(64), unique=True, nullable=True)  # персональная ссылка/сессия клиента сайта
     created_at = Column(DateTime, default=datetime.utcnow)
     orders = relationship("Order", back_populates="user", lazy="selectin")
     employee = relationship("Employee")
+
+
+class ChatMessage(Base):
+    """Единый чат клиент↔менеджер: сообщения с сайта и из бота хранятся вместе."""
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)  # контекст заказа, если есть
+    sender = Column(String(16), nullable=False)  # client | manager
+    text = Column(Text, nullable=False)
+    via = Column(String(16), nullable=False, default="site")  # site | bot — откуда отправлено
+    created_at = Column(DateTime, default=datetime.utcnow)
+    read_by_manager = Column(Boolean, default=False)
+    read_by_client = Column(Boolean, default=False)
+    user = relationship("User", lazy="selectin")
 
 class Category(Base):
     __tablename__ = "categories"
