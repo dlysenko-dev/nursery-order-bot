@@ -1579,21 +1579,20 @@ function renderVariants(slug){
   sorted.forEach(function(it, idx){
     ITEM_INDEX[it.id] = it;
     var isSapling = it.kind === 'sapling';
-    var out = !isSapling && !(it.stock > 0);
     var displayNumber = idx + 1;
     var kindName = CATEGORY_SINGULAR[slug] || cat.name;
     var displayTitle = kindName + ' №' + displayNumber;
     html +=
-      '<div class="variant' + (out ? ' is-out' : '') + (isSapling ? ' is-sapling' : '') + '">' +
+      '<div class="variant' + (isSapling ? ' is-sapling' : '') + '">' +
       '<div class="variant__fig" data-zoom="' + it.id + '" data-cursor><img src="' + esc(it.thumb) + '" alt="' + esc(displayTitle) + '" loading="lazy"></div>' +
       '<div class="variant__body">' +
       '<div class="variant__title">' + esc(displayTitle) + '</div>' +
-      '<div class="variant__stock">' + (isSapling ? '&nbsp;' : (out ? 'нет в наличии' : 'осталось ' + it.stock + ' шт.')) + '</div>' +
+      '<div class="variant__stock">&nbsp;</div>' +
       '<div class="variant__foot">' +
       (isSapling
         ? '<span class="variant__note">посадочный материал</span>'
         : '<span class="variant__price">' + fmt(it.price) + '</span>' +
-          '<button class="variant__add" data-vadd="' + it.id + '"' + (out ? ' disabled' : '') + ' aria-label="В корзину">+</button>') +
+          '<button class="variant__add" data-vadd="' + it.id + '" aria-label="В корзину">+</button>') +
       '</div>' +
       '</div></div>';
   });
@@ -1605,18 +1604,17 @@ function updateCardFromItems(slug){
   var cat = CATALOG[slug];
   var article = document.querySelector('.plant[data-id="' + slug + '"]');
   if (!cat || !article || !cat.items.length) return;
-  var min = Infinity, max = 0, inStock = false;
+  var min = Infinity, max = 0;
   cat.items.forEach(function(it){
     if (it.price < min) min = it.price;
     if (it.price > max) max = it.price;
-    if (it.stock > 0) inStock = true;
   });
   var b = article.querySelector('.plant__price b');
   if (b && min !== Infinity) b.textContent = (max > min ? 'от ' : '') + fmt(min);
   var badge = article.querySelector('.plant__badge');
   if (badge) {
-    badge.textContent = inStock ? 'В наличии' : 'Спросите в боте';
-    badge.classList.toggle('is-muted', !inStock);
+    badge.textContent = 'В наличии';
+    badge.classList.remove('is-muted');
   }
 }
 
