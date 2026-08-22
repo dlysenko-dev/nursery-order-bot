@@ -28,6 +28,7 @@ class OrderIn(BaseModel):
     comment: str | None = None
     ref_code: str | None = None
     init_data: str | None = None
+    site_token: str | None = None  # вернувшийся клиент сайта — привязываем заказ к нему
 
 
 def _validate_customer(data: OrderIn) -> list[str]:
@@ -99,6 +100,12 @@ async def create_order(data: OrderIn) -> dict:
     if tg_user:
         user = await crud.get_or_create_user(tg_user["id"], tg_user.get("username"))
         source = "miniapp"
+    elif data.site_token:
+        # Вернувшийся клиент сайта: заказ идёт в его существующий профиль
+        user = await crud.get_user_by_site_token(data.site_token.strip())
+        if not user:
+            user = await crud.get_or_create_site_user(data.phone.strip(), data.full_name.strip(), source="site")
+        source = "site"
     else:
         user = await crud.get_or_create_site_user(data.phone.strip(), data.full_name.strip(), source="site")
         source = "site"
@@ -138,6 +145,10 @@ async def create_order(data: OrderIn) -> dict:
         f"{WEBAPP_URL.rstrip('/')}/pay/{order.pay_token}"
         if WEBAPP_URL and order.pay_token else None
     )
+    client_url = (
+        f"{WEBAPP_URL.rstrip('/')}/client/{user.site_token}"
+        if WEBAPP_URL and user.site_token else None
+    )
     return {
         "order_id": order.id,
         "total_cost": order.total_cost,
@@ -148,6 +159,8 @@ async def create_order(data: OrderIn) -> dict:
         "manager_contact": manager_contact,
         "pay_token": order.pay_token,
         "pay_url": pay_url,
+        "site_token": user.site_token,
+        "client_url": client_url,
     }
 
 
