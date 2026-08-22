@@ -44,6 +44,7 @@ def _run_migrations(conn) -> None:
         ],
         "employees": [
             ("username", "VARCHAR(128)"),
+            ("telegram_username", "VARCHAR(128)"),
             ("password_hash", "VARCHAR(256)"),
             ("secret_token", "VARCHAR(128)"),
             ("role", "VARCHAR(32) DEFAULT 'manager'"),

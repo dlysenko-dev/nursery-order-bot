@@ -140,7 +140,7 @@ async def create_order(data: OrderIn) -> dict:
     await _notify_admins(order, source)
 
     requisites = (await crud.get_setting("payment_requisites")) or DEFAULT_PAYMENT_REQUISITES
-    manager_contact = (await crud.get_setting("manager_contact")) or ""
+    manager_contact = await crud.get_manager_contact_for_user(user)
     pay_url = (
         f"{WEBAPP_URL.rstrip('/')}/pay/{order.pay_token}"
         if WEBAPP_URL and order.pay_token else None

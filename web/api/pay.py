@@ -65,7 +65,7 @@ async def pay_info(pay_token: str) -> dict:
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
     requisites = crud.format_requisites_text(await crud.get_payment_requisites())
-    manager_contact = (await crud.get_setting("manager_contact")) or ""
+    manager_contact = await crud.get_manager_contact_for_user(order.user)
     return _order_public_view(order, requisites, manager_contact)
 
 

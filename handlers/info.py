@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from db.crud import get_setting
+from db.crud import get_setting, get_user_by_telegram_id, get_manager_contact_for_user
 from data.faq import FAQ_ITEMS
 from keyboards.main_menu import back_to_menu_kb, info_menu_kb
 
@@ -66,7 +66,10 @@ async def show_how_to_order(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "contact_manager")
 async def contact_manager(callback: CallbackQuery) -> None:
-    contact = await get_setting("manager_contact") or "@DanilLysenko"
+    user = await get_user_by_telegram_id(callback.from_user.id)
+    contact = await get_manager_contact_for_user(user)
+    if not contact:
+        contact = "@DanilLysenko"
     text = (
         f"📞 *Связь с менеджером*\n\n{contact}\n\n"
         "Напишите нам — ответим в ближайшее время.\n"

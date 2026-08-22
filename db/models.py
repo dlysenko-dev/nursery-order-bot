@@ -28,6 +28,7 @@ class Employee(Base):
     name = Column(String(128), nullable=False)
     ref_code = Column(String(64), unique=True, nullable=False)
     username = Column(String(128), unique=True, nullable=True)
+    telegram_username = Column(String(128), unique=True, nullable=True)
     password_hash = Column(String(256), nullable=True)
     secret_token = Column(String(128), unique=True, nullable=True)
     role = Column(String(32), nullable=False, default="manager")  # admin | manager
