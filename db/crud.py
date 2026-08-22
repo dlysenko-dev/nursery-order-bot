@@ -6,7 +6,7 @@ from typing import Optional
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.database import AsyncSessionLocal
-from db.models import CatalogItem, Category, Employee, EmployeeSession, EventLog, Order, OrderItem, OrderStatus, Payment, ReferralEvent, Settings, User
+from db.models import CatalogItem, Category, ChatMessage, Employee, EmployeeSession, EventLog, Order, OrderItem, OrderStatus, Payment, ReferralEvent, Settings, User
 
 async def get_setting(key: str) -> Optional[str]:
     async with AsyncSessionLocal() as s:
@@ -845,3 +845,135 @@ def format_requisites_text(requisites: dict) -> str:
     if not lines:
         return requisites.get("fallback_text") or ""
     return "\n".join(lines)
+
+
+# ---------- Чат клиент ↔ менеджер ----------
+
+async def get_or_create_chat_user(phone: str, full_name: str | None = None, source: str = "site") -> User:
+    """Клиент чата: по телефону (общий с заказами), гарантирует chat_token."""
+    user = await get_or_create_site_user(phone, full_name, source)
+    if full_name and not user.full_name:
+        async with AsyncSessionLocal() as s:
+            await s.execute(update(User).where(User.id == user.id).values(full_name=full_name))
+            await s.commit()
+        user = await get_user_by_id(user.id)
+    if not user.chat_token:
+        async with AsyncSessionLocal() as s:
+            await s.execute(update(User).where(User.id == user.id).values(chat_token=secrets.token_urlsafe(24)))
+            await s.commit()
+        user = await get_user_by_id(user.id)
+    return user
+
+
+async def ensure_chat_token(user_id: int) -> str | None:
+    """Гарантирует chat_token у существующего пользователя (в т.ч. Telegram-клиента)."""
+    async with AsyncSessionLocal() as s:
+        user = await s.get(User, user_id)
+        if not user:
+            return None
+        if not user.chat_token:
+            user.chat_token = secrets.token_urlsafe(24)
+            await s.commit()
+        return user.chat_token
+
+
+async def get_user_by_chat_token(chat_token: str) -> Optional[User]:
+    async with AsyncSessionLocal() as s:
+        result = await s.execute(select(User).where(User.chat_token == chat_token))
+        return result.scalar_one_or_none()
+
+
+async def get_user_by_id(user_id: int) -> Optional[User]:
+    async with AsyncSessionLocal() as s:
+        return await s.get(User, user_id)
+
+
+async def add_chat_message(
+    user_id: int,
+    sender: str,
+    text: str,
+    employee_id: int | None = None,
+) -> ChatMessage:
+    """Новое сообщение. sender: client | manager. Прочитано отправителем по умолчанию."""
+    msg = ChatMessage(
+        user_id=user_id,
+        sender=sender,
+        employee_id=employee_id,
+        text=text.strip(),
+        is_read_by_manager=(sender == "manager"),
+        is_read_by_client=(sender == "client"),
+    )
+    async with AsyncSessionLocal() as s:
+        s.add(msg)
+        await s.commit()
+        await s.refresh(msg)
+        return msg
+
+
+async def get_chat_messages(user_id: int, since_id: int = 0, limit: int = 200) -> list[ChatMessage]:
+    async with AsyncSessionLocal() as s:
+        q = (
+            select(ChatMessage)
+            .where(ChatMessage.user_id == user_id, ChatMessage.id > since_id)
+            .order_by(ChatMessage.id)
+            .limit(limit)
+        )
+        result = await s.execute(q)
+        return list(result.scalars().all())
+
+
+async def mark_chat_read_by_client(user_id: int) -> None:
+    async with AsyncSessionLocal() as s:
+        await s.execute(
+            update(ChatMessage)
+            .where(ChatMessage.user_id == user_id, ChatMessage.sender == "manager", ChatMessage.is_read_by_client == False)  # noqa: E712
+            .values(is_read_by_client=True)
+        )
+        await s.commit()
+
+
+async def mark_chat_read_by_manager(user_id: int) -> None:
+    async with AsyncSessionLocal() as s:
+        await s.execute(
+            update(ChatMessage)
+            .where(ChatMessage.user_id == user_id, ChatMessage.sender == "client", ChatMessage.is_read_by_manager == False)  # noqa: E712
+            .values(is_read_by_manager=True)
+        )
+        await s.commit()
+
+
+async def get_chat_threads() -> list[dict]:
+    """Диалоги для менеджера: клиент, последнее сообщение, непрочитанные."""
+    async with AsyncSessionLocal() as s:
+        last_ids = (
+            select(ChatMessage.user_id, func.max(ChatMessage.id).label("last_id"))
+            .group_by(ChatMessage.user_id)
+            .subquery()
+        )
+        result = await s.execute(
+            select(ChatMessage, User)
+            .join(last_ids, ChatMessage.id == last_ids.c.last_id)
+            .join(User, User.id == ChatMessage.user_id)
+            .order_by(ChatMessage.id.desc())
+        )
+        threads = []
+        for msg, user in result.all():
+            unread = await s.scalar(
+                select(func.count(ChatMessage.id)).where(
+                    ChatMessage.user_id == user.id,
+                    ChatMessage.sender == "client",
+                    ChatMessage.is_read_by_manager == False,  # noqa: E712
+                )
+            )
+            threads.append({
+                "user_id": user.id,
+                "full_name": user.full_name or "Без имени",
+                "phone": user.phone,
+                "source": user.source,
+                "telegram_id": user.telegram_id,
+                "last_message": msg.text,
+                "last_sender": msg.sender,
+                "last_at": msg.created_at.isoformat() if msg.created_at else None,
+                "unread": unread or 0,
+            })
+        return threads
