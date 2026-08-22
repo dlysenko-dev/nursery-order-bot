@@ -122,7 +122,7 @@ async def check_syntax_and_imports() -> None:
 
     try:
         import bot
-        assert len(bot.dp.sub_routers) == 12, f"роутеров: {len(bot.dp.sub_routers)}"
+        assert len(bot.dp.sub_routers) == 14, f"роутеров: {len(bot.dp.sub_routers)}"
         RESULT.add("Импорт bot.py и роутеры", True, f"{len(bot.dp.sub_routers)} роутеров")
     except Exception:
         RESULT.add("Импорт bot.py и роутеры", False, _exc_detail())
