@@ -70,6 +70,7 @@ class User(Base):
     pickup_point = Column(String(512), nullable=True)
     employee_id = Column(Integer, ForeignKey("employees.id"), nullable=True)  # кто привёл клиента
     source = Column(String(32), nullable=True, default="bot")  # bot | miniapp | site
+    chat_token = Column(String(64), unique=True, nullable=True)  # токен чата для клиента сайта без Telegram
     created_at = Column(DateTime, default=datetime.utcnow)
     orders = relationship("Order", back_populates="user", lazy="selectin")
     employee = relationship("Employee")
@@ -126,7 +127,7 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = relationship("User", back_populates="orders", lazy="selectin")
-    items = relationship("OrderItem", back_populates="order", lazy="selectin", cascade="all, delete-orphan")
+    items = relationship("OrderItem", back_populates="items", lazy="selectin", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="order", lazy="selectin")
 
 class OrderItem(Base):
@@ -168,3 +169,17 @@ class Settings(Base):
     __tablename__ = "settings"
     key = Column(String(64), primary_key=True)
     value = Column(String(512), nullable=True)
+
+
+class ChatMessage(Base):
+    """Сообщение чата клиент ↔ менеджер (общее для сайта, Mini App и бота)."""
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    sender = Column(String(16), nullable=False)  # client | manager
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=True)  # кто из менеджеров ответил
+    text = Column(Text, nullable=False)
+    is_read_by_manager = Column(Boolean, default=False)
+    is_read_by_client = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    user = relationship("User", lazy="selectin")
