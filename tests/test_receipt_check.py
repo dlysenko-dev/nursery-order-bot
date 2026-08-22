@@ -166,7 +166,6 @@ async def test_pipeline() -> None:
     check("pipeline: заказ создан", order is not None and not problems, f"problems={problems}")
     order_id = order.id
     check("pipeline: pay_token сгенерирован", bool(order.pay_token))
-    # 5000 + 300 доставка = 5300; предоплата 30% = 1590, остаток 3710
     check("pipeline: предоплата 30%", order.prepayment == 1590.0, f"prepayment={order.prepayment}")
 
     def rub(amount: float) -> str:
@@ -223,6 +222,27 @@ async def test_pipeline() -> None:
     # 7. Поиск заказа по pay_token (страница /pay)
     found = await crud.get_order_by_pay_token(order.pay_token)
     check("pipeline: заказ находится по pay_token", found is not None and found.id == order_id)
+
+    # 8. Ручное подтверждение админом: needs_review-платёж → verified + paid_at в заказе
+    # (регрессия: confirm_payment раньше не проставлял paid_at и падал на заказах с сайта)
+    order2, _ = await crud.create_web_order(
+        user_id=user.id,
+        items=[{"item_id": item_id, "quantity": 1}],
+        full_name="Тестовый Клиент", phone="+79000000000",
+        city="Тест", pickup_point="5Post Тест",
+        comment=None, source="site",
+    )
+    manual_receipt = WRONG_RECIPIENT.replace("SBOL-55555555", "SBOL-77777777").replace("1 500,00", rub(order2.prepayment))
+    payment_m, _ = await process_receipt(
+        manual_receipt.encode("utf-8"), "manual.txt", order2, "prepayment", REQUISITES,
+    )
+    assert payment_m.check_status == STATUS_NEEDS_REVIEW
+    approved = await crud.approve_payment_for_order(order2.id)
+    order2 = await crud.get_order_by_id(order2.id)
+    check(
+        "pipeline: ручное подтверждение → verified + prepayment_paid_at",
+        approved is not None and approved.verified and order2.prepayment_paid_at is not None,
+    )
 
 
 async def main() -> int:
