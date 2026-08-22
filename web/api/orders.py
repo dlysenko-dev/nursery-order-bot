@@ -7,7 +7,7 @@ import re
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from config import ADMIN_IDS, BOT_TOKEN, DEFAULT_PAYMENT_REQUISITES
+from config import ADMIN_IDS, BOT_TOKEN, DEFAULT_PAYMENT_REQUISITES, WEBAPP_URL
 from db import crud
 from web.auth import get_tg_user
 
@@ -134,6 +134,10 @@ async def create_order(data: OrderIn) -> dict:
 
     requisites = (await crud.get_setting("payment_requisites")) or DEFAULT_PAYMENT_REQUISITES
     manager_contact = (await crud.get_setting("manager_contact")) or ""
+    pay_url = (
+        f"{WEBAPP_URL.rstrip('/')}/pay/{order.pay_token}"
+        if WEBAPP_URL and order.pay_token else None
+    )
     return {
         "order_id": order.id,
         "total_cost": order.total_cost,
@@ -142,6 +146,8 @@ async def create_order(data: OrderIn) -> dict:
         "delivery_cost": order.delivery_cost,
         "payment_requisites": requisites,
         "manager_contact": manager_contact,
+        "pay_token": order.pay_token,
+        "pay_url": pay_url,
     }
 
 

@@ -1417,6 +1417,16 @@ $('#submitOrderBtn').addEventListener('click', function(){
 
 function renderSuccess(d){
   var mgr = d.manager_contact || ('@' + CONFIG.bot_username);
+  var payBlock = '';
+  if (d.pay_url) {
+    payBlock =
+      '<a class="btn btn--coral drawer__checkout" href="' + esc(d.pay_url) + '" target="_blank" rel="noopener" data-cursor>' +
+      'Перейти к оплате ' + fmt(d.prepayment) +
+      '</a>' +
+      '<p class="form-hint" style="margin-top:10px">После перевода нажмите кнопку выше и загрузите чек — мы подтвердим заказ автоматически.</p>';
+  } else {
+    payBlock = '<p class="form-hint">Пришлите чек менеджеру ' + esc(mgr) + ' — так мы быстрее подтвердим заказ.</p>';
+  }
   $('#successBody').innerHTML =
     '<p class="ok-big">Заказ №' + d.order_id + ' принят</p>' +
     '<p class="form-hint">Мы проверим наличие и свяжемся с вами. Заказ ждёт предоплату.</p>' +
@@ -1426,7 +1436,7 @@ function renderSuccess(d){
     '<div class="ok-row"><span>Остаток при получении</span><b>' + fmt(d.remainder) + '</b></div>' +
     '</div>' +
     (d.payment_requisites ? '<div class="ok-req">' + esc(d.payment_requisites) + '</div>' : '') +
-    '<p class="form-hint">Пришлите чек менеджеру ' + esc(mgr) + ' — так мы быстрее подтвердим заказ.</p>';
+    payBlock;
 }
 
 $('#successBackBtn').addEventListener('click', function(){
