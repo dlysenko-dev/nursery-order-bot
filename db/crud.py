@@ -801,7 +801,8 @@ async def approve_payment_for_order(order_id: int, kind: str | None = None) -> O
         # check_status оставляем needs_review (решение принял человек), verified=True — маркер подтверждения
         await mark_payment_result(payment.id, "needs_review", verified=True)
         await set_order_paid(order_id, payment.kind, payment.paid_at)
-        return payment
+        # перечитываем, чтобы вернуть свежий объект (verified=True), а не устаревший из кеша сессии
+        return await get_latest_payment(order_id, kind)
     return None
 
 
