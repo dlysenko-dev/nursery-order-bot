@@ -25,6 +25,7 @@ def _run_migrations(conn) -> None:
             ("pickup_point", "VARCHAR(512)"),
             ("employee_id", "INTEGER REFERENCES employees(id)"),
             ("source", "VARCHAR(32) DEFAULT 'bot'"),
+            ("chat_token", "VARCHAR(64)"),
         ],
         "orders": [
             ("employee_id", "INTEGER REFERENCES employees(id)"),
