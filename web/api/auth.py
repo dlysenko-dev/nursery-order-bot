@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 from db.crud import (
@@ -81,18 +81,25 @@ async def me(employee=Depends(get_current_employee)) -> dict:
 
 
 @router.get("/auth/secret/{secret_token}")
-async def login_by_secret(secret_token: str, request: Request) -> dict:
-    """Вход по секретной ссылке."""
+async def login_by_secret(secret_token: str, request: Request):
+    """Вход по секретной ссылке: ставим cookie и сразу ведём в кабинет.
+
+    Ссылку открывают в браузере, поэтому вместо JSON возвращаем редирект:
+    админ — в /admin, менеджер — в /cabinet.
+    """
     employee = await get_employee_by_secret_token(secret_token.strip())
     if not employee:
         raise HTTPException(status_code=404, detail="Ссылка недействительна")
+    if not employee.is_active:
+        raise HTTPException(status_code=403, detail="Аккаунт заблокирован")
     token = await create_employee_session(
         employee_id=employee.id,
         user_agent=request.headers.get("user-agent"),
         ip=request.client.host if request.client else None,
     )
     await update_employee_last_login(employee.id)
-    resp = JSONResponse({"token": token, "role": employee.role, "name": employee.name})
+    target = "/admin" if employee.role == "admin" else "/cabinet"
+    resp = RedirectResponse(url=target, status_code=303)
     resp.set_cookie(
         "session_token",
         token,
