@@ -127,7 +127,7 @@ class Order(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = relationship("User", back_populates="orders", lazy="selectin")
-    items = relationship("OrderItem", back_populates="items", lazy="selectin", cascade="all, delete-orphan")
+    items = relationship("OrderItem", back_populates="order", lazy="selectin", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="order", lazy="selectin")
 
 class OrderItem(Base):
