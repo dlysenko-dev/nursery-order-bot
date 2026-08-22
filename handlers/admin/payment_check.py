@@ -3,7 +3,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery, Message
 from config import ADMIN_IDS
-from db.crud import get_order_by_id, update_order_status, set_admin_comment
+from db.crud import (
+    approve_payment_for_order,
+    reject_payment_for_order,
+    get_order_by_id,
+    update_order_status,
+    set_admin_comment,
+)
 from db.models import OrderStatus
 from keyboards.admin_kb import admin_back_kb
 from states.states import AdminStates
@@ -21,14 +27,40 @@ async def confirm_payment(callback: CallbackQuery, bot: Bot) -> None:
         await callback.answer("Доступ запрещён", show_alert=True)
         return
     order_id = int(callback.data.replace("confirm_payment_", ""))
-    await update_order_status(order_id, OrderStatus.PAYMENT_CONFIRMED)
-    await update_order_status_in_sheets(order_id, OrderStatus.PAYMENT_CONFIRMED.value)
-    await log("payment_confirmed", order_id=order_id, user_id=callback.from_user.id)
     order = await get_order_by_id(order_id)
-    await bot.send_message(order.user.telegram_id, f"✅ Оплата подтверждена!\n\nВаш заказ №{order.id} принят.\n\nПосле отправки через 5Post мы сообщим вам трек-номер.")
-    await callback.message.edit_text(f"✅ Оплата по заказу №{order_id} подтверждена.")
+    if not order:
+        await callback.answer("Заказ не найден", show_alert=True)
+        return
+
+    # Помечаем последний платёж проверенным и проставляем *_paid_at в заказе
+    payment = await approve_payment_for_order(order_id)
+    kind = payment.kind if payment else "prepayment"
+
+    if kind == "prepayment":
+        await update_order_status(order_id, OrderStatus.PAYMENT_CONFIRMED)
+        await update_order_status_in_sheets(order_id, OrderStatus.PAYMENT_CONFIRMED.value)
+        admin_text = f"✅ Предоплата по заказу №{order_id} подтверждена."
+        client_text = (
+            f"✅ Оплата подтверждена!\n\nВаш заказ №{order.id} принят.\n\n"
+            f"После отправки через 5Post мы сообщим вам трек-номер."
+        )
+    else:
+        admin_text = f"✅ Остаток по заказу №{order_id} подтверждён — заказ полностью оплачен."
+        client_text = (
+            f"✅ Остаток по заказу №{order.id} подтверждён!\n\nЗаказ полностью оплачен, спасибо!"
+        )
+    await log("payment_confirmed", order_id=order_id, user_id=callback.from_user.id, details=f"kind={kind}")
+
+    # Клиент с сайта может не иметь Telegram — не падаем, просто не шлём
+    if order.user and order.user.telegram_id:
+        try:
+            await bot.send_message(order.user.telegram_id, client_text)
+        except Exception as exc:
+            print(f"Не удалось уведомить клиента по заказу №{order_id}: {exc}")
+
+    await callback.message.edit_text(admin_text)
     from services.export import send_export_to_admin
-    await send_export_to_admin(bot, caption=f"📊 Выгрузка обновлена: оплата подтверждена по заказу №{order_id}")
+    await send_export_to_admin(bot, caption=f"📊 Выгрузка обновлена: оплата подтверждена по заказу №{order_id} ({kind})")
     await callback.answer()
 
 @router.callback_query(F.data.startswith("reject_payment_"))
@@ -50,16 +82,22 @@ async def process_rejection_comment(message: Message, state: FSMContext, bot: Bo
     order_id = data["order_id"]
     comment = message.text.strip()
     await set_admin_comment(order_id, comment)
+    await reject_payment_for_order(order_id)
     # Возвращаем заказ в ожидание предоплаты — клиент сможет отправить чек повторно
     await update_order_status(order_id, OrderStatus.AWAITING_PREPAYMENT)
     await log("payment_rejected", order_id=order_id, user_id=message.from_user.id, details=comment)
     order = await get_order_by_id(order_id)
-    from keyboards.checkout_kb import receipt_retry_kb
-    await bot.send_message(
-        order.user.telegram_id,
-        f"❌ Оплата по заказу №{order.id} не подтверждена.\n\nКомментарий: {comment}\n\nПожалуйста, отправьте корректный чек ещё раз.",
-        reply_markup=receipt_retry_kb(),
-    )
+    # Клиент с сайта может не иметь Telegram — не падаем, просто не шлём
+    if order.user and order.user.telegram_id:
+        from keyboards.checkout_kb import receipt_retry_kb
+        try:
+            await bot.send_message(
+                order.user.telegram_id,
+                f"❌ Оплата по заказу №{order.id} не подтверждена.\n\nКомментарий: {comment}\n\nПожалуйста, отправьте корректный чек ещё раз.",
+                reply_markup=receipt_retry_kb(),
+            )
+        except Exception as exc:
+            print(f"Не удалось уведомить клиента по заказу №{order_id}: {exc}")
     await state.clear()
     await message.answer(f"Комментарий отправлен клиенту по заказу №{order_id}.")
     from services.export import send_export_to_admin
