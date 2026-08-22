@@ -44,3 +44,8 @@ class AdminStates(StatesGroup):
     waiting_new_payment_phone_sbp = State()
     waiting_new_payment_wallet = State()
     waiting_new_payment_recipient_name = State()
+
+
+class ChatStates(StatesGroup):
+    client_writing = State()      # клиент пишет менеджеру из бота
+    manager_replying = State()    # админ/менеджер отвечает клиенту из бота
