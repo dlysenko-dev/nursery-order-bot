@@ -53,6 +53,7 @@ def _order_public_view(order, requisites_text: str, manager_contact: str) -> dic
         "due_amount": due_amount,
         "requisites": requisites_text,
         "manager_contact": manager_contact,
+        "site_token": order.user.site_token if order.user else None,  # для чата на странице оплаты
         "cancelled": order.status == OrderStatus.CANCELLED,
     }
 

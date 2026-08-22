@@ -72,5 +72,9 @@ async def contact_manager(callback: CallbackQuery) -> None:
         "Напишите нам — ответим в ближайшее время.\n"
         "Вы также можете оформить заказ самостоятельно через каталог."
     )
-    await callback.message.edit_text(text, reply_markup=back_to_menu_kb(), parse_mode="Markdown")
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✍️ Написать сообщение", callback_data="chat_write")],
+        [InlineKeyboardButton(text="← Назад", callback_data="main_menu")],
+    ])
+    await callback.message.edit_text(text, reply_markup=kb, parse_mode="Markdown")
     await callback.answer()

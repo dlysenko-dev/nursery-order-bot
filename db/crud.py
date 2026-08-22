@@ -6,7 +6,7 @@ from typing import Optional
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from db.database import AsyncSessionLocal
-from db.models import CatalogItem, Category, Employee, EmployeeSession, EventLog, Order, OrderItem, OrderStatus, Payment, ReferralEvent, Settings, User
+from db.models import CatalogItem, Category, ChatMessage, Employee, EmployeeSession, EventLog, Order, OrderItem, OrderStatus, Payment, ReferralEvent, Settings, User
 
 async def get_setting(key: str) -> Optional[str]:
     async with AsyncSessionLocal() as s:
@@ -29,8 +29,10 @@ async def get_or_create_user(telegram_id: int, username: str | None) -> User:
         if not user:
             user = User(telegram_id=telegram_id, username=username)
             s.add(user)
-            await s.commit()
-            await s.refresh(user)
+        if not user.site_token:
+            user.site_token = secrets.token_urlsafe(16)
+        await s.commit()
+        await s.refresh(user)
         return user
 
 async def get_categories(active_only: bool = True) -> list[Category]:
@@ -627,9 +629,93 @@ async def get_or_create_site_user(phone: str, full_name: str | None = None, sour
         if not user:
             user = User(telegram_id=None, phone=phone_norm, full_name=full_name, source=source)
             s.add(user)
-            await s.commit()
-            await s.refresh(user)
+        if not user.site_token:
+            user.site_token = secrets.token_urlsafe(16)
+        await s.commit()
+        await s.refresh(user)
         return user
+
+
+async def get_user_by_site_token(site_token: str) -> Optional[User]:
+    async with AsyncSessionLocal() as s:
+        result = await s.execute(select(User).where(User.site_token == site_token))
+        return result.scalar_one_or_none()
+
+
+async def get_user_by_id(user_id: int) -> Optional[User]:
+    async with AsyncSessionLocal() as s:
+        return await s.get(User, user_id)
+
+
+async def get_orders_by_user(user_id: int) -> list[Order]:
+    async with AsyncSessionLocal() as s:
+        result = await s.execute(
+            select(Order).where(Order.user_id == user_id).order_by(Order.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+
+# ---------- Чат клиент ↔ менеджер (сайт + бот, единая история) ----------
+
+async def add_chat_message(
+    user_id: int,
+    sender: str,  # client | manager
+    text: str,
+    via: str,  # site | bot
+    order_id: int | None = None,
+) -> ChatMessage:
+    async with AsyncSessionLocal() as s:
+        msg = ChatMessage(
+            user_id=user_id, sender=sender, text=text.strip(), via=via, order_id=order_id,
+            read_by_manager=(sender == "manager"),
+            read_by_client=(sender == "client"),
+        )
+        s.add(msg)
+        await s.commit()
+        await s.refresh(msg)
+        return msg
+
+
+async def get_chat_history(user_id: int, after_id: int = 0, limit: int = 100) -> list[ChatMessage]:
+    async with AsyncSessionLocal() as s:
+        result = await s.execute(
+            select(ChatMessage)
+            .where(ChatMessage.user_id == user_id, ChatMessage.id > after_id)
+            .order_by(ChatMessage.id.asc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+
+async def mark_chat_read_by_client(user_id: int) -> None:
+    async with AsyncSessionLocal() as s:
+        await s.execute(
+            update(ChatMessage)
+            .where(ChatMessage.user_id == user_id, ChatMessage.sender == "manager")
+            .values(read_by_client=True)
+        )
+        await s.commit()
+
+
+async def mark_chat_read_by_manager(user_id: int) -> None:
+    async with AsyncSessionLocal() as s:
+        await s.execute(
+            update(ChatMessage)
+            .where(ChatMessage.user_id == user_id, ChatMessage.sender == "client")
+            .values(read_by_manager=True)
+        )
+        await s.commit()
+
+
+async def get_unread_chat_user_ids() -> list[int]:
+    """user_id с непрочитанными сообщениями от клиентов (для уведомления менеджеров)."""
+    async with AsyncSessionLocal() as s:
+        result = await s.execute(
+            select(ChatMessage.user_id)
+            .where(ChatMessage.sender == "client", ChatMessage.read_by_manager.is_(False))
+            .distinct()
+        )
+        return [r[0] for r in result.all()]
 
 
 async def create_web_order(

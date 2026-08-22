@@ -25,6 +25,7 @@ def _run_migrations(conn) -> None:
             ("pickup_point", "VARCHAR(512)"),
             ("employee_id", "INTEGER REFERENCES employees(id)"),
             ("source", "VARCHAR(32) DEFAULT 'bot'"),
+            ("site_token", "VARCHAR(64)"),
         ],
         "orders": [
             ("employee_id", "INTEGER REFERENCES employees(id)"),
@@ -56,7 +57,21 @@ def _run_migrations(conn) -> None:
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
     # Уникальный индекс для токена страницы оплаты (ALTER TABLE не умеет UNIQUE)
     conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_orders_pay_token ON orders (pay_token)"))
+    conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_site_token ON users (site_token)"))
+    _backfill_site_tokens(conn)
     _rebuild_users_if_needed(conn)
+
+
+def _backfill_site_tokens(conn) -> None:
+    """Выдаёт site_token существующим клиентам сайта (telegram_id IS NULL)."""
+    import secrets
+    from sqlalchemy import text
+    rows = conn.execute(text("SELECT id FROM users WHERE site_token IS NULL")).fetchall()
+    for (uid,) in rows:
+        conn.execute(
+            text("UPDATE users SET site_token = :t WHERE id = :i"),
+            {"t": secrets.token_urlsafe(16), "i": uid},
+        )
 
 def _rebuild_users_if_needed(conn) -> None:
     """Снимает NOT NULL с users.telegram_id (SQLite не умеет ALTER COLUMN — пересоздаём таблицу).
@@ -79,16 +94,18 @@ def _rebuild_users_if_needed(conn) -> None:
         "pickup_point VARCHAR(512), "
         "employee_id INTEGER REFERENCES employees(id), "
         "source VARCHAR(32) DEFAULT 'bot', "
+        "site_token VARCHAR(64), "
         "created_at DATETIME)"
     ))
     conn.execute(text(
         "INSERT INTO users_new "
-        "SELECT id, telegram_id, username, full_name, phone, city, pickup_point, employee_id, source, created_at "
+        "SELECT id, telegram_id, username, full_name, phone, city, pickup_point, employee_id, source, site_token, created_at "
         "FROM users"
     ))
     conn.execute(text("DROP TABLE users"))
     conn.execute(text("ALTER TABLE users_new RENAME TO users"))
     conn.execute(text("CREATE UNIQUE INDEX ix_users_telegram_id ON users (telegram_id)"))
+    conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_site_token ON users (site_token)"))
 
 async def get_session() -> AsyncSession:
     async with AsyncSessionLocal() as session:

@@ -609,6 +609,7 @@ body.hero-safe .hero__media img{transform:none!important}
     <a class="nav-link" href="#catalog" data-cursor>Каталог</a>
     <a class="nav-link" href="#how" data-cursor>Как заказать</a>
     <a class="me-link" id="meLink" href="/static/me.html" data-cursor hidden>Мои клиенты</a>
+    <a class="me-link" id="clientLink" href="/client" data-cursor hidden>Мои заказы</a>
     <button class="cart-btn" id="headCartBtn" data-cursor>
       Корзина <span class="cart-count" id="headCartCount">0</span>
     </button>
@@ -963,6 +964,18 @@ var CART_KEY = 'pitomnik_cart_v2'; /* v1 (по категориям) игнор�
 var cart = {};
 try { cart = JSON.parse(localStorage.getItem(CART_KEY) || '{}') || {}; } catch(e){ cart = {}; }
 function saveCart(){ try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch(e){} }
+/* Сессия клиента сайта: localStorage + cookie — данные не теряются при обновлении */
+function saveSiteToken(t){
+  try { localStorage.setItem('site_token', t); } catch(e){}
+  document.cookie = 'site_token=' + encodeURIComponent(t) + '; path=/; max-age=31536000; SameSite=Lax';
+}
+function getCookieSiteToken(){
+  var m = document.cookie.match(/(?:^|; )site_token=([^;]*)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function getSiteToken(){
+  try { return localStorage.getItem('site_token') || getCookieSiteToken(); } catch(e){ return getCookieSiteToken(); }
+}
 function fmt(n){ return n.toLocaleString('ru-RU') + ' ₽'; }
 function plural(n, one, few, many){
   var m = Math.abs(n) % 100, d = m % 10;
@@ -1325,7 +1338,26 @@ function updateFormSum(){
 }
 
 function prefillProfile(){
-  if (profileLoaded || !tg || !tg.initData) return;
+  if (profileLoaded) return;
+  /* Сайт: профиль и история по site_token (localStorage/cookie) */
+  var st = getSiteToken();
+  if (st) {
+    var cl = document.getElementById('clientLink');
+    if (cl) { cl.hidden = false; cl.href = '/client/' + st; }
+    if (!tg || !tg.initData) {
+      profileLoaded = true;
+      fetch('/api/client/' + encodeURIComponent(st))
+        .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function(p){
+          if (p.full_name && !fieldVal('inName')) document.getElementById('inName').value = p.full_name;
+          if (p.phone && !fieldVal('inPhone')) document.getElementById('inPhone').value = p.phone;
+          if (p.city && !fieldVal('inCity')) document.getElementById('inCity').value = p.city;
+        })
+        .catch(function(){});
+      return;
+    }
+  }
+  if (!tg || !tg.initData) return;
   profileLoaded = true;
   fetch('/api/profile?init_data=' + encodeURIComponent(tg.initData))
     .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -1380,6 +1412,7 @@ $('#submitOrderBtn').addEventListener('click', function(){
   var body = {items: items, full_name: name, phone: phone, city: city,
               pickup_point: point, comment: comment || null};
   try { var rc = localStorage.getItem('ref_code'); if (rc) body.ref_code = rc; } catch(e){}
+  try { var st = localStorage.getItem('site_token') || getCookieSiteToken(); if (st) body.site_token = st; } catch(e){}
   if (tg && tg.initData) body.init_data = tg.initData;
 
   submitting = true;
@@ -1403,6 +1436,7 @@ $('#submitOrderBtn').addEventListener('click', function(){
       return;
     }
     cart = {}; saveCart(); renderCart();
+    if (res.data && res.data.site_token) saveSiteToken(res.data.site_token);
     renderSuccess(res.data);
     showView('success');
     haptic('medium');
@@ -1436,7 +1470,11 @@ function renderSuccess(d){
     '<div class="ok-row"><span>Остаток при получении</span><b>' + fmt(d.remainder) + '</b></div>' +
     '</div>' +
     (d.payment_requisites ? '<div class="ok-req">' + esc(d.payment_requisites) + '</div>' : '') +
-    payBlock;
+    payBlock +
+    (d.client_url ?
+      '<p class="form-hint" style="margin-top:14px">📌 Ваша персональная страница: ' +
+      '<a href="' + esc(d.client_url) + '" target="_blank" rel="noopener">' + esc(d.client_url) + '</a><br>' +
+      'Там ваши заказы, оплата и чат с менеджером. Ссылка также сохранена в этом браузере.</p>' : '');
 }
 
 $('#successBackBtn').addEventListener('click', function(){
@@ -1652,6 +1690,8 @@ function checkEmployee(){
 }
 
 renderCart();
+/* Ссылка «Мои заказы» и предзаполнение профиля для вернувшегося клиента сайта */
+prefillProfile();
 })();
 </script>
 </body>

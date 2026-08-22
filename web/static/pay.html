@@ -92,6 +92,16 @@ h1{font-family:var(--serif);font-weight:600;font-size:32px;line-height:1.1;margi
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:8px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .hidden{display:none}
+.chat-msgs{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.chat-empty{color:var(--ink-60);font-size:13px;text-align:center;padding:18px 0}
+.cmsg{max-width:85%;padding:8px 12px;border-radius:12px;font-size:14px;white-space:pre-wrap;word-break:break-word}
+.cmsg.client{align-self:flex-end;background:var(--ink);color:var(--cream)}
+.cmsg.manager{align-self:flex-start;background:var(--cream-2)}
+.cmsg .time{display:block;font-size:10px;opacity:.55;margin-top:3px}
+.chat-form{display:flex;gap:8px}
+.chat-form input{flex:1;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-family:inherit;font-size:14px;background:var(--cream);color:var(--ink);outline:none}
+.chat-form input:focus{border-color:var(--ink)}
+.chat-form .btn{padding:10px 16px}
 </style>
 </head>
 <body>
@@ -135,6 +145,15 @@ h1{font-family:var(--serif);font-weight:600;font-size:32px;line-height:1.1;margi
   </div>
 
   <div class="contact" id="contact"></div>
+
+  <div class="card" id="chatCard" style="display:none">
+    <h2 style="margin-bottom:10px">Чат с менеджером</h2>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-form">
+      <input id="chatInput" maxlength="2000" placeholder="Ваш вопрос по заказу…" autocomplete="off">
+      <button class="btn btn-primary" id="chatSend" type="button">→</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -196,6 +215,8 @@ function render() {
     document.getElementById("contact").innerHTML =
       "Вопросы по оплате: <b>" + escapeHtml(order.manager_contact) + "</b>";
   }
+
+  if (order.site_token) { chatToken = order.site_token; startChat(); }
 }
 
 function escapeHtml(s) {
@@ -254,6 +275,63 @@ sendBtn.addEventListener("click", async () => {
     sendBtn.textContent = "Отправить чек на проверку";
   }
 });
+
+/* --- чат с менеджером (по site_token заказа) --- */
+let chatToken = null, chatLastId = 0, chatStarted = false;
+
+function renderChat(list) {
+  const box = document.getElementById("chatMsgs");
+  if (chatLastId === 0) box.innerHTML = "";
+  list.forEach(m => {
+    const d = document.createElement("div");
+    d.className = "cmsg " + (m.sender === "client" ? "client" : "manager");
+    d.innerHTML = escapeHtml(m.text) + '<span class="time">' +
+      (m.sender === "manager" ? "Менеджер · " : "") + escapeHtml(m.created_at || "") + "</span>";
+    box.appendChild(d);
+    chatLastId = Math.max(chatLastId, m.id);
+  });
+  if (list.length) box.scrollTop = box.scrollHeight;
+  if (chatLastId === 0 && !list.length) box.innerHTML = '<div class="chat-empty">Вопросы по заказу? Напишите — менеджер ответит здесь же.</div>';
+}
+
+async function pollChat() {
+  if (!chatToken) return;
+  try {
+    const res = await fetch(`/api/client/${chatToken}/messages?after_id=${chatLastId}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    renderChat(data.messages || []);
+  } catch (e) {}
+}
+
+function startChat() {
+  if (chatStarted || !chatToken) return;
+  chatStarted = true;
+  document.getElementById("chatCard").style.display = "block";
+  pollChat();
+  setInterval(pollChat, 5000);
+  const inp = document.getElementById("chatInput");
+  async function send() {
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = "";
+    try {
+      const res = await fetch(`/api/client/${chatToken}/messages`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({text, order_id: order ? order.order_id : null}),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      renderChat([data.message]);
+    } catch (e) {
+      inp.value = text;
+      alert("Не удалось отправить сообщение");
+    }
+  }
+  document.getElementById("chatSend").addEventListener("click", send);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") send(); });
+}
 
 load();
 </script>

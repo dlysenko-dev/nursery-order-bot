@@ -3,8 +3,8 @@ import logging
 from aiogram import Bot, Dispatcher
 from config import BOT_TOKEN
 from db.database import init_db
-from handlers import cabinet, start, catalog, cart, checkout, payment, info
-from handlers.admin import orders, payment_check, shipping, catalog_mgmt, settings
+from handlers import cabinet, chat, start, catalog, cart, checkout, payment, info
+from handlers.admin import chat_reply, orders, payment_check, shipping, catalog_mgmt, settings
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,7 +16,9 @@ dp.include_router(cart.router)
 dp.include_router(checkout.router)
 dp.include_router(payment.router)
 dp.include_router(info.router)
+dp.include_router(chat.router)
 dp.include_router(cabinet.router)
+dp.include_router(chat_reply.router)
 dp.include_router(orders.router)
 dp.include_router(payment_check.router)
 dp.include_router(shipping.router)
