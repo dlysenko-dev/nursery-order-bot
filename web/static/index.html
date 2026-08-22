@@ -1459,7 +1459,7 @@ function renderSuccess(d){
       '</a>' +
       '<p class="form-hint" style="margin-top:10px">После перевода нажмите кнопку выше и загрузите чек — мы подтвердим заказ автоматически.</p>';
   } else {
-    payBlock = '<p class="form-hint">Пришлите чек менеджеру ' + esc(mgr) + ' — так мы быстрее подтвердим заказ.</p>';
+    payBlock = '<p class="form-hint">Пришлите чек менеджеру в Telegram ' + esc(mgr) + ' — так мы быстрее подтвердим заказ.</p>';
   }
   $('#successBody').innerHTML =
     '<p class="ok-big">Заказ №' + d.order_id + ' принят</p>' +

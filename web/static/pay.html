@@ -213,7 +213,7 @@ function render() {
 
   if (order.manager_contact) {
     document.getElementById("contact").innerHTML =
-      "Вопросы по оплате: <b>" + escapeHtml(order.manager_contact) + "</b>";
+      "Вопросы по оплате — Telegram: <b>" + escapeHtml(order.manager_contact) + "</b>";
   }
 
   if (order.site_token) { chatToken = order.site_token; startChat(); }
