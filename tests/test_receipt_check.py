@@ -144,7 +144,7 @@ async def test_pipeline() -> None:
     await crud.set_setting("payment_phone_sbp", REQUISITES["phone_sbp"])
     await crud.set_setting("payment_recipient_name", REQUISITES["recipient_name"])
 
-    # Заказ на 5300 ₽ (5000 + доставка 300): предоплата 1590, остаток 3710
+    # Заказ на 5300 ₽ (5000 + доставка 300): полная предоплата 5300, остаток 0
     user = await crud.get_or_create_site_user("+79000000000", "Тестовый Клиент", source="site")
     category = (await crud.get_categories(active_only=False))[0]
     from db.models import CatalogItem
@@ -166,7 +166,7 @@ async def test_pipeline() -> None:
     check("pipeline: заказ создан", order is not None and not problems, f"problems={problems}")
     order_id = order.id
     check("pipeline: pay_token сгенерирован", bool(order.pay_token))
-    check("pipeline: предоплата 30%", order.prepayment == 1590.0, f"prepayment={order.prepayment}")
+    check("pipeline: предоплата 100%", order.prepayment == 5300.0, f"prepayment={order.prepayment}")
 
     def rub(amount: float) -> str:
         return f"{amount:,.2f}".replace(",", " ").replace(".", ",")  # 1590.0 → «1 590,00»
@@ -211,13 +211,9 @@ async def test_pipeline() -> None:
     )
     check("pipeline: нечитаемый файл → needs_review", payment5.check_status == STATUS_NEEDS_REVIEW)
 
-    # 6. Остаток: чек на 3710 ₽
-    remainder_receipt = SBER_RECEIPT.replace("1 500,00", rub(order.remainder)).replace("SBOL-84729105", "SBOL-99999999")
+    # 6. Полная предоплата: остаток всегда 0, вторая стадия оплаты не нужна
     order = await crud.get_order_by_id(order_id)
-    payment6, verdict6 = await process_receipt(
-        remainder_receipt.encode("utf-8"), "remainder.txt", order, "remainder", REQUISITES,
-    )
-    check("pipeline: остаток 3710 ₽ → auto_approved", payment6.check_status == STATUS_AUTO_APPROVED, f"reasons={verdict6.reasons}")
+    check("pipeline: остаток равен 0 (полная предоплата)", order.remainder == 0.0, f"remainder={order.remainder}")
 
     # 7. Поиск заказа по pay_token (страница /pay)
     found = await crud.get_order_by_pay_token(order.pay_token)
