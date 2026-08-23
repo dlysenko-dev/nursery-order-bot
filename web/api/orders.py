@@ -68,9 +68,9 @@ async def _notify_admins(order, source: str) -> None:
         lines += [
             "",
             f"Итого: {order.total_cost:.0f} ₽",
-            f"Предоплата: {order.prepayment:.0f} ₽",
+            f"К оплате (полностью): {order.prepayment:.0f} ₽",
             "",
-            "Статус: ожидается предоплата",
+            "Статус: ожидается оплата",
         ]
         bot = Bot(token=BOT_TOKEN)
         try:
@@ -140,7 +140,7 @@ async def create_order(data: OrderIn) -> dict:
     await _notify_admins(order, source)
 
     requisites = (await crud.get_setting("payment_requisites")) or DEFAULT_PAYMENT_REQUISITES
-    manager_contact = await crud.get_manager_contact_for_user(user)
+    manager_contact = (await crud.get_setting("manager_contact")) or ""
     pay_url = (
         f"{WEBAPP_URL.rstrip('/')}/pay/{order.pay_token}"
         if WEBAPP_URL and order.pay_token else None

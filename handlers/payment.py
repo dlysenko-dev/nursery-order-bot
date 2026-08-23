@@ -28,7 +28,7 @@ async def ask_for_receipt(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(PaymentStates.waiting_receipt)
     await callback.message.answer(
         f"📎 Отправьте фото или файл чека по заказу №{order.id}.\n\n"
-        f"К оплате сейчас: {order.prepayment:.0f} ₽ (предоплата {DEFAULT_PREPAYMENT_PERCENT}%).\n\n"
+        f"К оплате сейчас: {order.prepayment:.0f} ₽ (полная оплата заказа).\n\n"
         f"Если передумали — /cancel"
     )
     await callback.answer()
