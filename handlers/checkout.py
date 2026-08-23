@@ -149,7 +149,7 @@ async def _show_preview(message: Message, state: FSMContext) -> None:
     ]
     for oi in order.items:
         lines.append(f"{oi.catalog_item.category.name}, фото №{oi.catalog_item.photo_number} — {oi.quantity} шт.")
-    lines += ["", f"Стоимость растений: {order.plants_cost:.0f} ₽", f"Доставка: {order.delivery_cost:.0f} ₽", f"Итого: <b>{order.total_cost:.0f} ₽</b>", f"Предоплата {DEFAULT_PREPAYMENT_PERCENT}%: {order.prepayment:.0f} ₽", f"Остаток: {order.remainder:.0f} ₽"]
+    lines += ["", f"Стоимость растений: {order.plants_cost:.0f} ₽", f"Доставка: {order.delivery_cost:.0f} ₽", f"Итого: <b>{order.total_cost:.0f} ₽</b>", f"К оплате (полная предоплата): {order.prepayment:.0f} ₽"]
     await state.set_state(CheckoutStates.confirming_order)
     await message.answer("\n".join(lines), reply_markup=order_preview_kb(), parse_mode="HTML")
 
@@ -181,14 +181,14 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext) -> None:
     pay_token = await ensure_pay_token(order_id)
     pay_url = f"{WEBAPP_URL}/pay/{pay_token}" if WEBAPP_URL and pay_token else None
     requisites = format_requisites_text(await get_payment_requisites())
-    await callback.message.answer(f"✅ *Заявка создана*\n\nВаш номер заказа: *№{order.id}*\n\nСтатус: Ожидается предоплата", parse_mode="Markdown")
+    await callback.message.answer(f"✅ *Заявка создана*\n\nВаш номер заказа: *№{order.id}*\n\nСтатус: Ожидается оплата", parse_mode="Markdown")
     from keyboards.checkout_kb import prepayment_kb
-    await callback.message.answer(f"💳 *Предоплата*\n\nСумма вашего заказа: {order.total_cost:.0f} ₽\nПредоплата {DEFAULT_PREPAYMENT_PERCENT}%: {order.prepayment:.0f} ₽\n\nДля бронирования переведите {order.prepayment:.0f} ₽ на реквизиты:\n\n{requisites}\n\nПосле оплаты отправьте чек кнопкой ниже.", reply_markup=prepayment_kb(pay_url), parse_mode="Markdown")
+    await callback.message.answer(f"💳 *Оплата заказа*\n\nСумма вашего заказа: {order.total_cost:.0f} ₽\nОплачивается полностью: {order.prepayment:.0f} ₽\n\nДля бронирования переведите {order.prepayment:.0f} ₽ на реквизиты:\n\n{requisites}\n\nПосле оплаты отправьте чек кнопкой ниже.", reply_markup=prepayment_kb(pay_url), parse_mode="Markdown")
     admin_text = (
         f"🔔 <b>Новый заказ №{order.id}</b>\n\n"
         f"Клиент: {html.escape(order.full_name or '')}\nТелефон: {html.escape(order.phone or '')}\nГород: {html.escape(order.city or '')}\n"
-        f"Пункт 5Post: {html.escape(order.pickup_point or '')}\n\nИтого: {order.total_cost:.0f} ₽\nПредоплата: {order.prepayment:.0f} ₽\n\n"
-        f"Статус: ожидается предоплата"
+        f"Пункт 5Post: {html.escape(order.pickup_point or '')}\n\nИтого: {order.total_cost:.0f} ₽\nК оплате полностью: {order.prepayment:.0f} ₽\n\n"
+        f"Статус: ожидается оплата"
     )
     bot: Bot = callback.bot
     for admin_id in ADMIN_IDS:

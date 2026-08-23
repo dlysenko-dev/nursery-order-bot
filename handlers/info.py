@@ -1,6 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from db.crud import get_setting, get_user_by_telegram_id, get_manager_contact_for_user
+from db.crud import get_setting
 from data.faq import FAQ_ITEMS
 from keyboards.main_menu import back_to_menu_kb, info_menu_kb
 
@@ -13,13 +13,13 @@ async def show_info_menu(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "info_delivery")
 async def show_delivery_info(callback: CallbackQuery) -> None:
-    text = "🚚 Отправляем заказы через 5Post.\n\nСредняя стоимость доставки — около 300 ₽.\n\nСтоимость доставки добавляется к заказу.\n\nПри оформлении бот автоматически рассчитает итоговую сумму и предоплату 30%."
+    text = "🚚 Отправляем заказы через 5Post.\n\nСредняя стоимость доставки — около 300 ₽.\n\nСтоимость доставки добавляется к заказу.\n\nПри оформлении бот автоматически рассчитает итоговую сумму к оплате."
     await callback.message.edit_text(text, reply_markup=back_to_menu_kb())
     await callback.answer()
 
 @router.callback_query(F.data == "info_payment")
 async def show_payment_info(callback: CallbackQuery) -> None:
-    text = "💳 Для бронирования заказа необходимо внести предоплату 30% от общей суммы заказа вместе с доставкой.\n\nПосле формирования заказа бот покажет точную сумму предоплаты и реквизиты.\n\nПосле оплаты необходимо отправить чек в бот."
+    text = "💳 Заказ оплачивается полностью: стоимость растений вместе с доставкой.\n\nПосле формирования заказа бот покажет точную сумму и реквизиты.\n\nПосле оплаты необходимо отправить чек в бот."
     await callback.message.edit_text(text, reply_markup=back_to_menu_kb())
     await callback.answer()
 
@@ -66,10 +66,7 @@ async def show_how_to_order(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "contact_manager")
 async def contact_manager(callback: CallbackQuery) -> None:
-    user = await get_user_by_telegram_id(callback.from_user.id)
-    contact = await get_manager_contact_for_user(user)
-    if not contact:
-        contact = "@DanilLysenko"
+    contact = await get_setting("manager_contact") or "@DanilLysenko"
     text = (
         f"📞 *Связь с менеджером*\n\n{contact}\n\n"
         "Напишите нам — ответим в ближайшее время.\n"
