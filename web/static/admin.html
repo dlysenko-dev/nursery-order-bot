@@ -166,6 +166,24 @@ input:focus,select:focus{border-color:var(--ink)}
 #toast.is-show{transform:translate(-50%,0);opacity:1}
 
 .empty{padding:34px 16px;text-align:center;color:var(--ink-40);font-size:14px}
+
+/* ============ OVERVIEW (менеджеры → клиенты → заказы) ============ */
+.ov-mgr{border:1px solid var(--line);border-radius:16px;background:var(--cream-2);margin-bottom:12px;overflow:hidden}
+.ov-mgr>summary{list-style:none;cursor:pointer;padding:16px 18px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline}
+.ov-mgr>summary::-webkit-details-marker{display:none}
+.ov-name{font-family:var(--serif);font-weight:600;font-size:22px;line-height:1.1}
+.ov-meta{font-size:12px;color:var(--ink-60);white-space:nowrap}
+.ov-meta b{color:var(--ink);font-variant-numeric:tabular-nums}
+.ov-clients{padding:2px 18px 16px}
+.ov-client{border-top:1px solid var(--line)}
+.ov-client>summary{list-style:none;cursor:pointer;padding:10px 0;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline;font-size:14px}
+.ov-client>summary::-webkit-details-marker{display:none}
+.ov-client>summary:hover .ov-cname{color:var(--coral-deep)}
+.ov-cname{font-weight:700}
+.ov-cmeta{font-size:12px;color:var(--ink-40)}
+table.ov-orders{min-width:680px;margin:4px 0 12px}
+table.ov-orders td,table.ov-orders th{padding:8px 10px;font-size:12px}
+.ov-none{padding:10px 0 14px;font-size:13px;color:var(--ink-40)}
 </style>
 </head>
 <body>
@@ -216,12 +234,15 @@ input:focus,select:focus{border-color:var(--ink)}
       <div class="stat"><b id="stSum">—</b><span>общая сумма</span></div>
     </div>
 
+    <div class="sec-title">Менеджеры: клиенты и заказы</div>
+    <div id="overviewList"><div class="empty">Загрузка…</div></div>
+
     <div class="sec-title">Сотрудники</div>
     <div class="table-scroll">
       <table>
         <thead>
           <tr>
-            <th>Имя</th><th>Логин</th><th>Telegram @username</th><th>Telegram ID</th><th>Роль</th><th>Статус</th>
+            <th>Имя</th><th>Логин</th><th>Telegram ID</th><th>Роль</th><th>Статус</th>
             <th>Последний вход</th><th>Создан</th><th>Действия</th>
           </tr>
         </thead>
@@ -252,11 +273,6 @@ input:focus,select:focus{border-color:var(--ink)}
         <label for="fTg">Telegram ID (необязательно)</label>
         <input id="fTg" type="text" inputmode="numeric" autocomplete="off">
         <div class="field-err" data-err="fTg"></div>
-      </div>
-      <div>
-        <label for="fTgUsername">Telegram @username (необязательно)</label>
-        <input id="fTgUsername" type="text" autocomplete="off" placeholder="username без @">
-        <div class="field-err" data-err="fTgUsername"></div>
       </div>
       <div>
         <label for="fRole">Роль</label>
@@ -343,7 +359,78 @@ function showAdmin(me){
   $('btnLogout').hidden = false;
   $('helloLine').textContent = 'Вы вошли как ' + me.name + ' (' + me.username + ')';
   loadStats();
+  loadOverview();
   loadEmployees();
+}
+
+/* ---------- Overview: менеджеры → клиенты → заказы ---------- */
+function loadOverview(){
+  api('/api/admin/overview').then(function(data){
+    renderOverview(data.groups || []);
+  }).catch(function(err){
+    if (err.message !== 'unauthorized') toast('Не удалось загрузить сводку по менеджерам');
+  });
+}
+
+function renderOverview(groups){
+  var box = $('overviewList');
+  if (!groups.length) {
+    box.innerHTML = '<div class="empty">Менеджеров пока нет</div>';
+    return;
+  }
+  box.innerHTML = groups.map(function(g){
+    var src = g.visits_by_source || {};
+    var visitsTxt = 'переходов: <b>' + (g.visits || 0) + '</b>' +
+      (src.bot ? ' (бот ' + src.bot + ')' : '') +
+      (src.miniapp ? ' (мини-апп ' + src.miniapp + ')' : '') +
+      (src.site ? ' (сайт ' + src.site + ')' : '');
+    var clientsHtml = g.clients.length
+      ? g.clients.map(clientHtml).join('')
+      : '<div class="ov-none">Клиентов пока нет</div>';
+    return '<details class="ov-mgr" open>' +
+      '<summary>' +
+        '<span class="ov-name">' + esc(g.name) + '</span>' +
+        '<span class="ov-meta">' + visitsTxt + '</span>' +
+        '<span class="ov-meta">клиентов: <b>' + g.clients_count + '</b></span>' +
+        '<span class="ov-meta">заказов: <b>' + g.orders_count + '</b></span>' +
+        '<span class="ov-meta">на сумму: <b>' + fmt(g.orders_sum) + '</b></span>' +
+        (g.is_active ? '' : '<span class="badge badge--off">Заблокирован</span>') +
+      '</summary>' +
+      '<div class="ov-clients">' + clientsHtml + '</div>' +
+    '</details>';
+  }).join('');
+}
+
+function clientHtml(c){
+  var contact = [c.phone, c.city].filter(Boolean).map(esc).join(' · ');
+  var ordersHtml = c.orders.length
+    ? '<div class="table-scroll"><table class="ov-orders"><thead><tr>' +
+      '<th>Заказ</th><th>Дата</th><th>Состав</th><th>Сумма</th><th>Статус</th><th>Оплата</th><th>Трек</th>' +
+      '</tr></thead><tbody>' +
+      c.orders.map(orderHtml).join('') +
+      '</tbody></table></div>'
+    : '<div class="ov-none">Заказов нет</div>';
+  return '<details class="ov-client">' +
+    '<summary>' +
+      '<span class="ov-cname">' + esc(c.name || 'Без имени') + '</span>' +
+      '<span class="ov-cmeta">' + (contact || '—') + '</span>' +
+      '<span class="ov-cmeta">источник: ' + esc(c.source || '—') + '</span>' +
+      '<span class="ov-cmeta">заказов: <b>' + c.orders_count + '</b> на <b>' + fmt(c.orders_sum) + '</b></span>' +
+    '</summary>' +
+    ordersHtml +
+  '</details>';
+}
+
+function orderHtml(o){
+  return '<tr>' +
+    '<td><b>№' + o.id + '</b></td>' +
+    '<td>' + esc(o.created_at || '—') + '</td>' +
+    '<td>' + esc((o.items || []).join(', ') || '—') + '</td>' +
+    '<td>' + fmt(o.total) + '</td>' +
+    '<td><span class="badge">' + esc(o.status) + '</span></td>' +
+    '<td>' + (o.paid ? '<span class="badge badge--ok">Оплачен</span>' : '<span class="badge badge--off">Не оплачен</span>') + '</td>' +
+    '<td>' + (o.track_number ? esc(o.track_number) : '<span class="muted">—</span>') + '</td>' +
+  '</tr>';
 }
 
 /* ---------- Auth ---------- */
@@ -434,7 +521,6 @@ function renderEmployees(){
     return '<tr>' +
       '<td><b>' + esc(e.name) + '</b></td>' +
       '<td>' + esc(e.username || '—') + '</td>' +
-      '<td>' + (e.telegram_username ? '<span class="muted">@</span>' + esc(e.telegram_username) : '<span class="muted">—</span>') + '</td>' +
       '<td>' + (e.telegram_id != null ? esc(e.telegram_id) : '<span class="muted">—</span>') + '</td>' +
       '<td>' + roleBadge + '</td>' +
       '<td>' + statusBadge + '</td>' +
@@ -442,7 +528,6 @@ function renderEmployees(){
       '<td>' + (e.created_at ? esc(e.created_at) : '<span class="muted">—</span>') + '</td>' +
       '<td><div class="actions">' +
         '<button class="act' + (e.is_active ? ' act--danger' : '') + '" data-action="toggle" data-id="' + e.id + '">' + toggleLabel + '</button>' +
-        '<button class="act" data-action="tgusername" data-id="' + e.id + '">Telegram @</button>' +
         '<button class="act" data-action="reset" data-id="' + e.id + '">Сбросить пароль</button>' +
         '<button class="act" data-action="secret" data-id="' + e.id + '">Новая ссылка</button>' +
         '<button class="act" data-action="role" data-id="' + e.id + '">' + roleLabel + '</button>' +
@@ -495,15 +580,6 @@ document.addEventListener('click', function(e){
       .then(function(){ toast('Роль обновлена'); loadEmployees(); })
       .catch(showErr);
   }
-  if (action === 'tgusername') {
-    var current = emp.telegram_username ? '@' + emp.telegram_username : '';
-    var value = window.prompt('Telegram @username для «' + emp.name + '» (оставьте пустым чтобы удалить):', current);
-    if (value === null) return;
-    value = value.replace(/^@/, '').trim();
-    api('/api/admin/employees/' + id, {method: 'PATCH', body: {telegram_username: value || null}})
-      .then(function(){ toast('Telegram username обновлён'); loadEmployees(); })
-      .catch(showErr);
-  }
 });
 
 function showErr(err){
@@ -522,13 +598,12 @@ function setErr(field, msg){
 
 $('createForm').addEventListener('submit', function(e){
   e.preventDefault();
-  ['fName','fUser','fPass','fTg','fTgUsername'].forEach(function(f){ setErr(f, ''); });
+  ['fName','fUser','fPass','fTg'].forEach(function(f){ setErr(f, ''); });
 
   var name = $('fName').value.trim();
   var username = $('fUser').value.trim();
   var password = $('fPass').value;
   var tgRaw = $('fTg').value.trim();
-  var tgUsernameRaw = $('fTgUsername').value.trim();
   var role = $('fRole').value;
 
   var ok = true;
@@ -540,14 +615,12 @@ $('createForm').addEventListener('submit', function(e){
     if (!/^\d+$/.test(tgRaw)) { setErr('fTg', 'Только цифры'); ok = false; }
     else telegram_id = Number(tgRaw);
   }
-  var telegram_username = tgUsernameRaw ? tgUsernameRaw.replace(/^@/, '') : null;
-  if (telegram_username && telegram_username.length < 3) { setErr('fTgUsername', 'Минимум 3 символа'); ok = false; }
   if (!ok) return;
 
   $('createBtn').disabled = true;
   api('/api/admin/employees', {
     method: 'POST',
-    body: {name: name, username: username, password: password, telegram_id: telegram_id, telegram_username: telegram_username, role: role}
+    body: {name: name, username: username, password: password, telegram_id: telegram_id, role: role}
   }).then(function(data){
     var emp = data.employee;
     showModal(
