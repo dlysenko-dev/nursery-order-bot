@@ -137,7 +137,7 @@ def main() -> None:
         "if(typeof url==='string'&&url.indexOf('/api')===0){"
         "var path=url.slice(4);var method=(opts&&opts.method)||'GET';var body,status=200;"
         "if(method==='POST'&&path==='/orders'){var plants=0;try{JSON.parse(opts.body).items.forEach(function(it){var item=MOCK['/item/'+it.item_id];plants+=(item?item.price:0)*it.quantity;});}catch(e){}"
-        "var del=MOCK['/config'].delivery_cost,total=plants+del,pre=Math.round(total*0.3);"
+        "var del=MOCK['/config'].delivery_cost,total=plants+del,pre=total;"
         "body={order_id:100,total_cost:total,prepayment:pre,remainder:total-pre,delivery_cost:del,"
         "payment_requisites:'Ozon Банк: 89233981917 (демо)',manager_contact:MOCK['/config'].manager_contact};}"
         "else if(Object.prototype.hasOwnProperty.call(MOCK,path)){body=MOCK[path];}"
@@ -162,7 +162,7 @@ def main() -> None:
     ivory pill CTA, Cormorant Garamond + Manrope, сетка 4px, mobile-first, max-width 480px.
 
   Экраны: welcome → каталог → категория (растения/саженцы) → карточка → корзина
-  (доставка 5Post, предоплата 30%) → оформление → успех с реквизитами.
+  (доставка 5Post, полная предоплата) → оформление → успех с реквизитами.
 -->"""
 
     index = (STATIC / "index.html").read_text(encoding="utf-8")

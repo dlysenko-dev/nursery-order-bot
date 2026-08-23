@@ -283,7 +283,9 @@ async def _recalculate_order(order_id: int, s: AsyncSession) -> None:
     items = result.scalars().all()
     plants_cost = sum(oi.quantity * oi.price_at_order for oi in items)
     total = plants_cost + order.delivery_cost
-    prepayment = round(total * 0.30, 2)
+    # полная предоплата: клиент оплачивает весь заказ сразу, остаток = 0
+    from config import DEFAULT_PREPAYMENT_PERCENT
+    prepayment = round(total * DEFAULT_PREPAYMENT_PERCENT / 100, 2)
     order.plants_cost = plants_cost
     order.total_cost = total
     order.prepayment = prepayment
@@ -448,6 +450,97 @@ async def get_employee_stats(employee_id: int) -> dict:
         return {"clients": clients, "orders": orders, "total": total}
 
 
+def _overview_order_view(o: Order) -> dict:
+    """Заказ в разрезе админской сводки: сумма, оплата, трек, состав."""
+    items = []
+    for oi in o.items or []:
+        title = oi.catalog_item.title if oi.catalog_item and oi.catalog_item.title else f"фото №{oi.catalog_item.photo_number}" if oi.catalog_item else "позиция"
+        items.append(f"{title} × {oi.quantity}")
+    return {
+        "id": o.id,
+        "status": o.status.value,
+        "total": o.total_cost,
+        "prepayment": o.prepayment,
+        "remainder": o.remainder,
+        "paid": bool(o.prepayment_paid_at) and (o.remainder <= 0 or bool(o.remainder_paid_at)),
+        "source": o.source,
+        "track_number": o.track_number,
+        "created_at": o.created_at.strftime("%d.%m.%Y %H:%M") if o.created_at else None,
+        "items": items,
+    }
+
+
+async def get_admin_overview() -> dict:
+    """Полная сводка для главной админки: каждый сотрудник → его клиенты → их заказы.
+
+    Плюс блок «без менеджера» для клиентов/заказов без привязки, чтобы было видно всё.
+    """
+    async with AsyncSessionLocal() as s:
+        employees = list((await s.execute(select(Employee).order_by(Employee.created_at))).scalars().all())
+        users = list((await s.execute(select(User).order_by(User.created_at.desc()))).scalars().all())
+        orders = list(
+            (
+                await s.execute(
+                    select(Order).where(Order.status != OrderStatus.DRAFT).order_by(Order.created_at.desc())
+                )
+            ).scalars().all()
+        )
+        ref_rows = (
+            await s.execute(
+                select(ReferralEvent.employee_id, ReferralEvent.source, func.count())
+                .group_by(ReferralEvent.employee_id, ReferralEvent.source)
+            )
+        ).all()
+
+    refs_by_emp: dict[int, dict[str, int]] = {}
+    for emp_id, source, cnt in ref_rows:
+        refs_by_emp.setdefault(emp_id, {})[source] = cnt
+
+    orders_by_user: dict[int, list[Order]] = {}
+    for o in orders:
+        orders_by_user.setdefault(o.user_id, []).append(o)
+
+    def client_view(u: User) -> dict:
+        u_orders = orders_by_user.get(u.id, [])
+        return {
+            "id": u.id,
+            "name": u.full_name,
+            "phone": u.phone,
+            "city": u.city,
+            "source": u.source,
+            "created_at": u.created_at.strftime("%d.%m.%Y") if u.created_at else None,
+            "orders_count": len(u_orders),
+            "orders_sum": round(sum(o.total_cost for o in u_orders), 2),
+            "orders": [_overview_order_view(o) for o in u_orders],
+        }
+
+    def group_view(emp, clients: list[User]) -> dict:
+        views = [client_view(u) for u in clients]
+        refs = refs_by_emp.get(emp.id, {}) if emp else {}
+        return {
+            "id": emp.id if emp else None,
+            "name": emp.name if emp else "Без менеджера",
+            "role": emp.role if emp else None,
+            "is_active": emp.is_active if emp else True,
+            "ref_code": emp.ref_code if emp else None,
+            "visits": sum(refs.values()),
+            "visits_by_source": refs,
+            "clients_count": len(views),
+            "orders_count": sum(c["orders_count"] for c in views),
+            "orders_sum": round(sum(c["orders_sum"] for c in views), 2),
+            "clients": views,
+        }
+
+    groups = []
+    for emp in employees:
+        groups.append(group_view(emp, [u for u in users if u.employee_id == emp.id]))
+    # клиенты без привязки, у которых есть заказы, — чтобы ничего не потерять
+    unassigned = [u for u in users if u.employee_id is None and orders_by_user.get(u.id)]
+    if unassigned:
+        groups.append(group_view(None, unassigned))
+    return {"groups": groups}
+
+
 # ---------- Сессии сотрудников (вход на сайт) ----------
 
 async def create_employee_session(employee_id: int, token: str, expires_at: datetime, user_agent: str | None = None, ip: str | None = None) -> EmployeeSession:
@@ -564,14 +657,6 @@ async def update_employee_telegram_id(employee_id: int, telegram_id: int) -> Non
         await s.commit()
 
 
-async def update_employee_telegram_username(employee_id: int, telegram_username: str | None) -> None:
-    async with AsyncSessionLocal() as s:
-        await s.execute(
-            update(Employee).where(Employee.id == employee_id).values(telegram_username=_clean_tg_username(telegram_username))
-        )
-        await s.commit()
-
-
 async def update_employee_last_login(employee_id: int) -> None:
     async with AsyncSessionLocal() as s:
         await s.execute(update(Employee).where(Employee.id == employee_id).values(last_login_at=datetime.utcnow()))
@@ -599,7 +684,6 @@ async def create_employee_with_auth(
     username: str,
     password_hash: str,
     telegram_id: int | None = None,
-    telegram_username: str | None = None,
     role: str = "manager",
     secret_token: str | None = None,
 ) -> Employee:
@@ -615,7 +699,6 @@ async def create_employee_with_auth(
         emp = Employee(
             name=name,
             username=username,
-            telegram_username=_clean_tg_username(telegram_username),
             password_hash=password_hash,
             telegram_id=telegram_id,
             ref_code=ref_code,
@@ -626,23 +709,6 @@ async def create_employee_with_auth(
         await s.commit()
         await s.refresh(emp)
         return emp
-
-
-def _clean_tg_username(value: str | None) -> str | None:
-    """Приводит Telegram-username к виду без @."""
-    if not value:
-        return None
-    v = value.strip().lstrip("@")
-    return v if v else None
-
-
-async def get_manager_contact_for_user(user: User | None) -> str:
-    """Возвращает контакт менеджера для клиента: @telegram_username реферального менеджера или глобальный контакт."""
-    if user and user.employee_id:
-        emp = await get_employee_by_id(user.employee_id)
-        if emp and emp.telegram_username:
-            return "@" + emp.telegram_username
-    return (await get_setting("manager_contact")) or ""
 
 
 # ---------- Веб-заказы (Mini App / сайт) ----------

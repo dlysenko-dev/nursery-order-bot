@@ -98,7 +98,7 @@ function saveToken(t){
   document.cookie = 'site_token=' + encodeURIComponent(t) + '; path=/; max-age=31536000; SameSite=Lax';
 }
 var STATUS_RU = {
-  new:'Новый', awaiting_prepayment:'Ждём предоплату', payment_confirmed:'Предоплата подтверждена',
+  new:'Новый', awaiting_prepayment:'Ждёт оплаты', payment_confirmed:'Оплата подтверждена',
   shipped:'Отправлен', done:'Завершён', cancelled:'Отменён'
 };
 function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
@@ -137,10 +137,10 @@ function renderOrders(orders){
   var box = document.getElementById('orders');
   if (!orders.length){ box.innerHTML = '<div class="card"><div class="empty">Заказов пока нет</div></div>'; return; }
   box.innerHTML = orders.map(function(o){
-    var payBadge = o.remainder_paid ? '<span class="badge paid">Оплачен</span>'
+    var payBadge = o.remainder_paid || (o.prepayment_paid && !o.remainder) ? '<span class="badge paid">Оплачен</span>'
       : o.prepayment_paid ? '<span class="badge wait">Ждём остаток</span>'
-      : '<span class="badge wait">Ждём предоплату</span>';
-    var payBtn = (o.pay_url && !o.remainder_paid && o.status !== 'cancelled')
+      : '<span class="badge wait">Ждёт оплаты</span>';
+    var payBtn = (o.pay_url && !o.remainder_paid && !(o.prepayment_paid && !o.remainder) && o.status !== 'cancelled')
       ? '<a class="btn" href="' + esc(o.pay_url) + '">Оплатить</a>' : '';
     return '<div class="card">'
       + '<div class="order-top"><span class="order-id">Заказ №' + o.order_id + '</span>'

@@ -118,8 +118,8 @@ h1{font-family:var(--serif);font-weight:600;font-size:32px;line-height:1.1;margi
       <div id="stageBadge" class="stage"></div>
       <div class="row"><span class="label">Заказ</span><span class="value" id="orderId"></span></div>
       <div class="row"><span class="label">Итого (с доставкой)</span><span class="value" id="total"></span></div>
-      <div class="row"><span class="label" id="prepayLabel">Предоплата</span><span class="value" id="prepay"></span></div>
-      <div class="row"><span class="label">Остаток</span><span class="value" id="remainder"></span></div>
+      <div class="row"><span class="label" id="prepayLabel">К оплате</span><span class="value" id="prepay"></span></div>
+      <div class="row" id="remainderRow"><span class="label">Остаток</span><span class="value" id="remainder"></span></div>
       <div class="row"><span class="label">К оплате сейчас</span><span class="value due" id="due"></span></div>
     </div>
 
@@ -185,9 +185,11 @@ function render() {
 
   document.getElementById("orderId").textContent = "№" + order.order_id;
   document.getElementById("total").textContent = fmt(order.total_cost);
-  document.getElementById("prepayLabel").textContent = `Предоплата ${order.prepayment_percent}%`;
+  const fullPay = order.prepayment_percent >= 100;
+  document.getElementById("prepayLabel").textContent = fullPay ? "К оплате полностью" : `Предоплата ${order.prepayment_percent}%`;
   document.getElementById("prepay").textContent = fmt(order.prepayment) + (order.prepayment_paid ? " ✓" : "");
   document.getElementById("remainder").textContent = fmt(order.remainder) + (order.remainder_paid ? " ✓" : "");
+  document.getElementById("remainderRow").style.display = order.remainder > 0 ? "" : "none";
   document.getElementById("prepay").classList.toggle("done", order.prepayment_paid);
   document.getElementById("remainder").classList.toggle("done", order.remainder_paid);
   document.getElementById("requisites").textContent = order.requisites || "Уточните реквизиты у менеджера";
@@ -207,13 +209,13 @@ function render() {
     document.getElementById("uploadCard").classList.add("hidden");
     document.getElementById("reqCard").classList.add("hidden");
   } else {
-    badge.textContent = order.due_kind === "prepayment" ? "Этап 1 из 2 — предоплата" : "Этап 2 из 2 — остаток";
+    badge.textContent = order.due_kind === "prepayment" ? (fullPay ? "К оплате — вся сумма заказа" : "Этап 1 из 2 — предоплата") : "Этап 2 из 2 — остаток";
     due.textContent = fmt(order.due_amount);
   }
 
   if (order.manager_contact) {
     document.getElementById("contact").innerHTML =
-      "Вопросы по оплате — Telegram: <b>" + escapeHtml(order.manager_contact) + "</b>";
+      "Вопросы по оплате: <b>" + escapeHtml(order.manager_contact) + "</b>";
   }
 
   if (order.site_token) { chatToken = order.site_token; startChat(); }
@@ -251,7 +253,6 @@ sendBtn.addEventListener("click", async () => {
   form.append("file", f);
   const result = document.getElementById("result");
   result.className = "msg";
-
   try {
     const res = await fetch(`/api/pay/${token}/receipt`, {method: "POST", body: form});
     const data = await res.json();

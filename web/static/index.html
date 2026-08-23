@@ -314,6 +314,22 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
   margin:0 -20px;padding-left:20px;padding-right:20px;
 }
 .gallery__strip::-webkit-scrollbar{display:none}
+.reviews__strip{
+  display:flex;gap:14px;overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  padding-bottom:12px;
+  scrollbar-width:none;
+  margin:0 -20px;padding-left:20px;padding-right:20px;
+}
+.reviews__strip::-webkit-scrollbar{display:none}
+.rev-item{
+  flex:0 0 auto;scroll-snap-align:start;
+  border-radius:6px;overflow:hidden;
+  background:var(--paper, #f4f1ea);
+  box-shadow:0 6px 24px rgba(5,12,9,.18);
+}
+.rev-item img{display:block;height:320px;width:auto;max-width:80vw;object-fit:contain}
+@media(min-width:900px){.rev-item img{height:420px}}
 .g-item{
   flex:0 0 72vw;max-width:420px;scroll-snap-align:start;
   position:relative;border-radius:4px;overflow:hidden;
@@ -803,6 +819,16 @@ body.hero-safe .hero__media img{transform:none!important}
     </div>
   </section>
 
+  <!-- REVIEWS: скриншоты отзывов (Авито, мессенджеры). Пустая папка — секция скрыта -->
+  <section class="section reviews" id="reviews" hidden>
+    <div class="sec-head" data-reveal>
+      <h2>Отзывы <em>покупателей</em></h2>
+      <span class="sec-note">Авито и личные переписки</span>
+    </div>
+    <div class="reviews__strip" id="reviewsStrip" data-reveal></div>
+    <p class="form-hint" data-reveal style="margin-top:14px">Скриншоты реальных отзывов — нажмите, чтобы открыть в полный размер.</p>
+  </section>
+
   <!-- HOW -->
   <section class="section how" id="how">
     <div class="sec-head" data-reveal>
@@ -887,7 +913,7 @@ body.hero-safe .hero__media img{transform:none!important}
   <div class="drawer__view" id="viewForm" hidden>
     <div class="drawer__scroll">
       <p class="drawer__subtitle">Куда отправить заказ</p>
-      <p class="form-hint">Отправляем по России через 5Post. Предоплата 30%, остаток — при получении.</p>
+      <p class="form-hint">Отправляем по России через 5Post. Оплата заказа полностью при оформлении.</p>
       <div class="form-problems" id="formProblems" role="alert"></div>
       <div class="field" id="fName"><label for="inName">ФИО</label><input id="inName" type="text" autocomplete="name" placeholder="Иванова Мария Сергеевна"></div>
       <div class="field" id="fPhone"><label for="inPhone">Телефон</label><input id="inPhone" type="tel" autocomplete="tel" placeholder="+7 900 000-00-00"></div>
@@ -1005,6 +1031,7 @@ function toast(msg){
 /* ---------- Motion setup ---------- */
 var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var hasGsap = typeof window.gsap !== 'undefined';
+var isTouch = window.matchMedia('(hover: none)').matches || 'ontouchstart' in window;
 var lenis = null;
 
 if (reduced || !hasGsap) {
@@ -1018,7 +1045,9 @@ if (reduced || !hasGsap) {
 
 if (hasGsap && !reduced) {
   gsap.registerPlugin(ScrollTrigger);
-  if (typeof window.Lenis !== 'undefined') {
+  /* Lenis только на десктопе: на тач-устройствах он перехватывает touchmove
+     и после lenis.stop() глушит прокрутку формы внутри drawer (Chrome/Android) */
+  if (typeof window.Lenis !== 'undefined' && !isTouch) {
     lenis = new Lenis({ duration: 1.15, smoothWheel: true });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
@@ -1131,6 +1160,28 @@ if (hasGsap && !reduced) {
   } else {
     $$('[data-reveal]').forEach(function(el){ el.classList.add('is-in'); });
   }
+
+  /* отзывы: скриншоты из /static/assets/reviews (список отдаёт /api/reviews) */
+  fetch('/api/reviews').then(function(r){ return r.json(); }).then(function(d){
+    var list = (d && d.reviews) || [];
+    if (!list.length) return;  /* отзывов пока нет — секция остаётся скрытой */
+    var strip = document.getElementById('reviewsStrip');
+    list.forEach(function(rv){
+      var a = document.createElement('a');
+      a.className = 'rev-item';
+      a.href = rv.src; a.target = '_blank'; a.rel = 'noopener';
+      var img = document.createElement('img');
+      img.src = rv.src; img.alt = 'Отзыв покупателя'; img.loading = 'lazy';
+      a.appendChild(img);
+      strip.appendChild(a);
+    });
+    document.getElementById('reviews').hidden = false;
+    /* секция появилась после загрузки — сразу подсвечиваем reveal-элементы в зоне видимости */
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    document.querySelectorAll('#reviews [data-reveal]').forEach(function(el){
+      if (el.getBoundingClientRect().top < vh * .9) el.classList.add('is-in');
+    });
+  }).catch(function(){ /* без отзывов сайт работает как раньше */ });
 
   /* catalog image parallax */
   $$('.plant__fig img').forEach(function(img){
@@ -1459,15 +1510,14 @@ function renderSuccess(d){
       '</a>' +
       '<p class="form-hint" style="margin-top:10px">После перевода нажмите кнопку выше и загрузите чек — мы подтвердим заказ автоматически.</p>';
   } else {
-    payBlock = '<p class="form-hint">Пришлите чек менеджеру в Telegram ' + esc(mgr) + ' — так мы быстрее подтвердим заказ.</p>';
+    payBlock = '<p class="form-hint">Пришлите чек менеджеру ' + esc(mgr) + ' — так мы быстрее подтвердим заказ.</p>';
   }
   $('#successBody').innerHTML =
     '<p class="ok-big">Заказ №' + d.order_id + ' принят</p>' +
-    '<p class="form-hint">Мы проверим наличие и свяжемся с вами. Заказ ждёт предоплату.</p>' +
+    '<p class="form-hint">Мы проверим наличие и свяжемся с вами. Заказ ждёт оплаты.</p>' +
     '<div class="ok-rows">' +
     '<div class="ok-row"><span>Итого с доставкой</span><b>' + fmt(d.total_cost) + '</b></div>' +
-    '<div class="ok-row"><span>Предоплата 30%</span><b>' + fmt(d.prepayment) + '</b></div>' +
-    '<div class="ok-row"><span>Остаток при получении</span><b>' + fmt(d.remainder) + '</b></div>' +
+    '<div class="ok-row"><span>К оплате полностью</span><b>' + fmt(d.prepayment) + '</b></div>' +
     '</div>' +
     (d.payment_requisites ? '<div class="ok-req">' + esc(d.payment_requisites) + '</div>' : '') +
     payBlock +
@@ -1579,20 +1629,21 @@ function renderVariants(slug){
   sorted.forEach(function(it, idx){
     ITEM_INDEX[it.id] = it;
     var isSapling = it.kind === 'sapling';
+    var out = !isSapling && !(it.stock > 0);
     var displayNumber = idx + 1;
     var kindName = CATEGORY_SINGULAR[slug] || cat.name;
     var displayTitle = kindName + ' №' + displayNumber;
     html +=
-      '<div class="variant' + (isSapling ? ' is-sapling' : '') + '">' +
+      '<div class="variant' + (out ? ' is-out' : '') + (isSapling ? ' is-sapling' : '') + '">' +
       '<div class="variant__fig" data-zoom="' + it.id + '" data-cursor><img src="' + esc(it.thumb) + '" alt="' + esc(displayTitle) + '" loading="lazy"></div>' +
       '<div class="variant__body">' +
       '<div class="variant__title">' + esc(displayTitle) + '</div>' +
-      '<div class="variant__stock">&nbsp;</div>' +
+      '<div class="variant__stock">' + (isSapling ? '&nbsp;' : (out ? 'нет в наличии' : 'осталось ' + it.stock + ' шт.')) + '</div>' +
       '<div class="variant__foot">' +
       (isSapling
         ? '<span class="variant__note">посадочный материал</span>'
         : '<span class="variant__price">' + fmt(it.price) + '</span>' +
-          '<button class="variant__add" data-vadd="' + it.id + '" aria-label="В корзину">+</button>') +
+          '<button class="variant__add" data-vadd="' + it.id + '"' + (out ? ' disabled' : '') + ' aria-label="В корзину">+</button>') +
       '</div>' +
       '</div></div>';
   });
@@ -1604,17 +1655,18 @@ function updateCardFromItems(slug){
   var cat = CATALOG[slug];
   var article = document.querySelector('.plant[data-id="' + slug + '"]');
   if (!cat || !article || !cat.items.length) return;
-  var min = Infinity, max = 0;
+  var min = Infinity, max = 0, inStock = false;
   cat.items.forEach(function(it){
     if (it.price < min) min = it.price;
     if (it.price > max) max = it.price;
+    if (it.stock > 0) inStock = true;
   });
   var b = article.querySelector('.plant__price b');
   if (b && min !== Infinity) b.textContent = (max > min ? 'от ' : '') + fmt(min);
   var badge = article.querySelector('.plant__badge');
   if (badge) {
-    badge.textContent = 'В наличии';
-    badge.classList.remove('is-muted');
+    badge.textContent = inStock ? 'В наличии' : 'Спросите в боте';
+    badge.classList.toggle('is-muted', !inStock);
   }
 }
 

@@ -71,7 +71,7 @@ async def show_order_card(callback: CallbackQuery) -> None:
     if not order:
         await callback.answer("Заказ не найден", show_alert=True)
         return
-    show_remainder = bool(order.prepayment_paid_at) and not order.remainder_paid_at
+    show_remainder = bool(order.prepayment_paid_at) and not order.remainder_paid_at and order.remainder > 0
     await callback.message.edit_text(
         _order_card_text(order),
         reply_markup=admin_order_card_kb(order_id, show_remainder=show_remainder),
@@ -81,7 +81,7 @@ async def show_order_card(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data.startswith("admin_request_remainder_"))
 async def request_remainder(callback: CallbackQuery, bot: Bot) -> None:
-    """Вторая стадия оплаты: запрашиваем у клиента остаток (70%) после подтверждённой предоплаты."""
+    """Вторая стадия оплаты: запрашиваем остаток. При полной предоплате остатка нет — сообщаем об этом."""
     if not _is_admin(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
@@ -89,6 +89,9 @@ async def request_remainder(callback: CallbackQuery, bot: Bot) -> None:
     order = await get_order_by_id(order_id)
     if not order:
         await callback.answer("Заказ не найден", show_alert=True)
+        return
+    if order.remainder <= 0:
+        await callback.answer("Заказ оплачивается полностью — остатка нет", show_alert=True)
         return
     if not order.prepayment_paid_at:
         await callback.answer("Предоплата ещё не подтверждена — рано запрашивать остаток", show_alert=True)
