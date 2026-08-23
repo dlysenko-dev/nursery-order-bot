@@ -31,7 +31,7 @@ def _due_stage(order) -> tuple[str | None, float]:
     """Какой платёж сейчас ждём: предоплата, остаток или ничего (всё оплачено)."""
     if not order.prepayment_paid_at:
         return "prepayment", order.prepayment
-    if not order.remainder_paid_at:
+    if order.remainder > 0 and not order.remainder_paid_at:
         return "remainder", order.remainder
     return None, 0.0
 
@@ -65,7 +65,7 @@ async def pay_info(pay_token: str) -> dict:
     if not order:
         raise HTTPException(status_code=404, detail="Заказ не найден")
     requisites = crud.format_requisites_text(await crud.get_payment_requisites())
-    manager_contact = await crud.get_manager_contact_for_user(order.user)
+    manager_contact = (await crud.get_setting("manager_contact")) or ""
     return _order_public_view(order, requisites, manager_contact)
 
 
