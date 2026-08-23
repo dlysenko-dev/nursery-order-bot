@@ -219,8 +219,8 @@ async def check_crud_and_logic() -> None:
         assert len(order.items) == 1
         assert order.plants_cost == 750.0, f"plants_cost={order.plants_cost}"
         assert order.total_cost == order.plants_cost + order.delivery_cost
-        assert order.prepayment == round(order.total_cost * 0.30, 2)
-        assert order.remainder == round(order.total_cost - order.prepayment, 2)
+        assert order.prepayment == order.total_cost  # полная предоплата 100%
+        assert order.remainder == 0.0
         RESULT.add("Сценарий корзины/заказа", True, f"заказ №{order.id}, сумма {order.total_cost}")
     except Exception:
         RESULT.add("Сценарий корзины/заказа", False, _exc_detail())
@@ -258,10 +258,10 @@ async def check_calculator() -> None:
     try:
         calc = calculate_order(plants_cost=900, delivery_cost=300)
         assert calc.total == 1200
-        assert calc.prepayment == 360
-        assert calc.remainder == 840
+        assert calc.prepayment == 1200  # полная предоплата
+        assert calc.remainder == 0
         text = format_order_summary(calc)
-        assert "1200" in text and "360" in text and "840" in text
+        assert "1200" in text and "Остаток" not in text
         RESULT.add("Расчёт предоплаты и форматирование", True)
     except Exception:
         RESULT.add("Расчёт предоплаты и форматирование", False, _exc_detail())
