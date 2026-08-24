@@ -5,6 +5,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from db.crud import (
     assign_employee_to_user,
+    bind_employee_by_username,
     get_draft_order,
     get_employee_by_ref_code,
     get_employee_by_telegram_id,
@@ -32,6 +33,11 @@ async def cmd_start(message: Message, command: CommandObject) -> None:
             await log("referral_attached", user_id=user.id, details=f"employee={employee.ref_code}")
     draft = await get_draft_order(user.id)
     await log("start", user_id=user.id)
+    # Автопривязка сотрудника по @username при первом входе (telegram_id ещё не задан)
+    if not await get_employee_by_telegram_id(user.id):
+        bound = await bind_employee_by_username(user.id, user.username)
+        if bound:
+            await log("employee_bound_by_username", user_id=user.id, details=f"employee={bound.ref_code}")
     is_employee = bool(await get_employee_by_telegram_id(user.id))
     welcome_file_id = await get_setting("welcome_cover_file_id")
     text = "🌸 *Питомник многолетников*\n\nЗдесь можно посмотреть растения, узнать условия доставки и оформить заказ.\n\nВыберите нужный раздел:"

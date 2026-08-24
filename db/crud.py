@@ -764,6 +764,31 @@ async def update_employee_telegram_username(employee_id: int, telegram_username:
         await s.commit()
 
 
+async def bind_employee_by_username(telegram_id: int, username: str | None) -> Optional[Employee]:
+    """Привязать telegram_id к сотруднику по его @username при первом входе в бот.
+
+    Ищет активного сотрудника без telegram_id, чей telegram_username совпадает
+    (без учёта регистра). Если нашёлся — записывает telegram_id и возвращает его.
+    """
+    uname = _clean_tg_username(username)
+    if not uname:
+        return None
+    async with AsyncSessionLocal() as s:
+        result = await s.execute(
+            select(Employee).where(
+                Employee.is_active.is_(True),
+                Employee.telegram_id.is_(None),
+                func.lower(Employee.telegram_username) == uname.lower(),
+            )
+        )
+        emp = result.scalar_one_or_none()
+        if emp:
+            emp.telegram_id = telegram_id
+            await s.commit()
+            await s.refresh(emp)
+        return emp
+
+
 # ---------- Веб-заказы (Mini App / сайт) ----------
 
 async def get_or_create_site_user(phone: str, full_name: str | None = None, source: str = "site") -> User:
