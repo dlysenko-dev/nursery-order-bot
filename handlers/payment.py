@@ -112,7 +112,7 @@ async def receive_receipt(message: Message, state: FSMContext, bot: Bot) -> None
         f"Статус: Чек получен\n📎 Чек прикреплён"
     )
     from db.crud import get_responsible_notify_ids
-    for admin_id in await get_responsible_notify_ids(order.user_id):
+    for admin_id in await get_responsible_notify_ids(order.user_id, order_employee_id=order.employee_id):
         try:
             if message.photo:
                 await bot.send_photo(admin_id, file_id, caption=admin_text, reply_markup=payment_check_kb(order.id), parse_mode="HTML")
@@ -146,13 +146,13 @@ async def _apply_auto_approval(message: Message, bot: Bot, order, payment, kind:
             f"Клиент: {html.escape(order.full_name or '')}\nСумма: {payment.amount:.0f} ₽ (остаток)\n"
             f"Операция: {html.escape(payment.operation_id or '—')}\n\nЗаказ полностью оплачен"
         )
-    await _notify_admins_text(bot, admin_text, order.user_id)
+    await _notify_admins_text(bot, admin_text, order.user_id, order_employee_id=order.employee_id)
     from services.export import send_export_to_admin
     await send_export_to_admin(bot, caption=f"📊 Выгрузка обновлена: оплата подтверждена автоматически по заказу №{order.id}")
 
-async def _notify_admins_text(bot: Bot, text: str, user_id: int | None = None) -> None:
+async def _notify_admins_text(bot: Bot, text: str, user_id: int | None = None, order_employee_id: int | None = None) -> None:
     from db.crud import get_responsible_notify_ids
-    for admin_id in await get_responsible_notify_ids(user_id):
+    for admin_id in await get_responsible_notify_ids(user_id, order_employee_id=order_employee_id):
         try:
             await bot.send_message(admin_id, text, parse_mode="HTML")
         except Exception as exc:

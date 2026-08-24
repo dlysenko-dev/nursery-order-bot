@@ -106,6 +106,7 @@ async def pay_upload_receipt(pay_token: str, file: UploadFile = File(...)) -> di
             f"Клиент: {html.escape(order.full_name or '')}\n"
             f"Причина: {html.escape('; '.join(verdict.reasons))}",
             user_id=order.user_id,
+            employee_id=order.employee_id,
         )
         return {
             "result": STATUS_REJECTED,
@@ -132,7 +133,7 @@ async def pay_upload_receipt(pay_token: str, file: UploadFile = File(...)) -> di
         f"К оплате ({kind_label}): {due_amount:.0f} ₽\n\n"
         f"🤖 Автопроверка:\n{reasons_text}"
     )
-    await _notify_admins(admin_text, file_bytes=file_bytes, filename=filename, order_id=order.id, user_id=order.user_id)
+    await _notify_admins(admin_text, file_bytes=file_bytes, filename=filename, order_id=order.id, user_id=order.user_id, employee_id=order.employee_id)
     try:
         from services.sheets import save_order_to_sheets
 
@@ -174,7 +175,7 @@ async def _apply_auto_approval(order, payment, kind: str) -> None:
             f"Операция: {html.escape(payment.operation_id or '—')}\n\nЗаказ полностью оплачен"
         )
         client_text = f"✅ Остаток по заказу №{order.id} подтверждён автоматически.\n\nЗаказ полностью оплачен, спасибо!"
-    await _notify_admins(admin_text, user_id=order.user_id)
+    await _notify_admins(admin_text, user_id=order.user_id, employee_id=order.employee_id)
     if order.user and order.user.telegram_id:
         await _send_to_user(order.user.telegram_id, client_text)
     await _send_export(f"📊 Выгрузка обновлена: оплата подтверждена автоматически по заказу №{order.id}")
@@ -186,8 +187,9 @@ async def _notify_admins(
     filename: str = "receipt",
     order_id: int | None = None,
     user_id: int | None = None,
+    employee_id: int | None = None,
 ) -> None:
-    """Сообщение менеджеру, чей это клиент (админам, если клиент ничей); при наличии файла — с чеком и кнопками ручной проверки."""
+    """Сообщение менеджеру, чей это заказ/клиент (админам, если клиент ничей); при наличии файла — с чеком и кнопками ручной проверки."""
     if not BOT_TOKEN:
         return
     try:
@@ -196,7 +198,7 @@ async def _notify_admins(
 
         from db.crud import get_responsible_notify_ids
 
-        notify_ids = await get_responsible_notify_ids(user_id)
+        notify_ids = await get_responsible_notify_ids(user_id, order_employee_id=employee_id)
         if not notify_ids:
             return
 

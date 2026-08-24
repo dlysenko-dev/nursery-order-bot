@@ -115,6 +115,10 @@ async def _notify_managers(user, text: str, order_id: int | None = None) -> None
         from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
         notify_ids = await crud.get_responsible_notify_ids(user.id)
+        if order_id:
+            order = await crud.get_order_by_id(order_id)
+            if order and order.employee_id:
+                notify_ids = await crud.get_responsible_notify_ids(user.id, order_employee_id=order.employee_id)
         if not notify_ids:
             return
 

@@ -191,7 +191,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext) -> None:
         f"Статус: ожидается оплата"
     )
     bot: Bot = callback.bot
-    for admin_id in await get_responsible_notify_ids(order.user_id):
+    for admin_id in await get_responsible_notify_ids(order.user_id, order_employee_id=order.employee_id):
         try:
             await bot.send_message(admin_id, admin_text, parse_mode="HTML")
         except Exception:

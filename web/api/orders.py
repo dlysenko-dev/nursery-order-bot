@@ -53,7 +53,7 @@ async def _notify_admins(order, source: str) -> None:
 
         from db.crud import get_responsible_notify_ids
 
-        notify_ids = await get_responsible_notify_ids(order.user_id)
+        notify_ids = await get_responsible_notify_ids(order.user_id, order_employee_id=order.employee_id)
         if not notify_ids:
             return
 

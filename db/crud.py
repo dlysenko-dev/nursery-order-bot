@@ -216,7 +216,7 @@ async def get_or_create_draft(telegram_id: int, username: str | None) -> Order:
     async with AsyncSessionLocal() as s:
         delivery_cost_str = await get_setting("delivery_cost")
         delivery_cost = float(delivery_cost_str) if delivery_cost_str else 300.0
-        order = Order(user_id=user.id, delivery_cost=delivery_cost, pay_token=secrets.token_urlsafe(16))
+        order = Order(user_id=user.id, delivery_cost=delivery_cost, pay_token=secrets.token_urlsafe(16), employee_id=user.employee_id)
         s.add(order)
         await s.commit()
         await s.refresh(order)
@@ -439,17 +439,23 @@ async def is_staff(telegram_id: int) -> bool:
         return result.first() is not None
 
 
-async def get_responsible_notify_ids(user_id: int | None) -> list[int]:
+async def get_responsible_notify_ids(user_id: int | None, order_employee_id: int | None = None) -> list[int]:
     """Кому слать уведомления по этому клиенту (заказ/оплата/сообщение).
 
-    Только менеджер, за которым клиент закреплён (пришёл по его реф-ссылке),
-    независимо от роли — admin или manager. Если клиент ни за кем не закреплён
-    или у менеджера нет telegram_id — уведомление уходит админам из ADMIN_IDS.
+    Приоритет:
+    1. Менеджер, зафиксированный в самом заказе (order_employee_id) — по чьей
+       ссылке оформлен именно этот заказ.
+    2. Менеджер, закреплённый за профилем клиента (user.employee_id).
+    3. Админы из ADMIN_IDS (клиент «ничей» или у менеджера нет telegram_id).
     """
     from config import ADMIN_IDS
 
-    if user_id:
-        async with AsyncSessionLocal() as s:
+    async with AsyncSessionLocal() as s:
+        if order_employee_id:
+            emp = await s.get(Employee, order_employee_id)
+            if emp and emp.is_active and emp.telegram_id:
+                return [emp.telegram_id]
+        if user_id:
             user = await s.get(User, user_id)
             if user and user.employee_id:
                 emp = await s.get(Employee, user.employee_id)
