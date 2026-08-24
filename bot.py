@@ -5,10 +5,15 @@ from config import BOT_TOKEN
 from db.database import init_db
 from handlers import cabinet, chat, start, catalog, cart, checkout, payment, info
 from handlers.admin import chat_reply, orders, payment_check, shipping, catalog_mgmt, settings
+from handlers.bind_middleware import EmployeeBindMiddleware
 
 logging.basicConfig(level=logging.INFO)
 
 dp = Dispatcher()
+
+# Автопривязка сотрудника по @username при любом сообщении/кнопке
+dp.message.outer_middleware(EmployeeBindMiddleware())
+dp.callback_query.outer_middleware(EmployeeBindMiddleware())
 
 dp.include_router(start.router)
 dp.include_router(catalog.router)
