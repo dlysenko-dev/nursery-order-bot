@@ -16,6 +16,7 @@ class EmployeeOut(BaseModel):
     id: int
     name: str
     username: str | None
+    telegram_username: str | None
     telegram_id: int | None
     ref_code: str
     role: str
@@ -29,6 +30,7 @@ class EmployeeCreateIn(BaseModel):
     username: str = Field(min_length=3, max_length=64)
     password: str = Field(min_length=6, max_length=128)
     telegram_id: int | None = None
+    telegram_username: str | None = Field(default=None, max_length=128)
     role: str = "manager"
 
 
@@ -36,6 +38,7 @@ class EmployeeUpdateIn(BaseModel):
     is_active: bool | None = None
     role: str | None = None
     telegram_id: int | None = None
+    telegram_username: str | None = Field(default=None, max_length=128)
 
 
 def _to_out(emp) -> dict:
@@ -43,6 +46,7 @@ def _to_out(emp) -> dict:
         "id": emp.id,
         "name": emp.name,
         "username": emp.username,
+        "telegram_username": emp.telegram_username,
         "telegram_id": emp.telegram_id,
         "ref_code": emp.ref_code,
         "role": emp.role,
@@ -71,6 +75,7 @@ async def create_employee(data: EmployeeCreateIn, employee=Depends(require_admin
         username=data.username.strip(),
         password_hash=hash_password(data.password),
         telegram_id=data.telegram_id,
+        telegram_username=data.telegram_username.strip() if data.telegram_username else None,
         role=data.role,
         secret_token=secret_token,
     )
@@ -79,7 +84,7 @@ async def create_employee(data: EmployeeCreateIn, employee=Depends(require_admin
 
 @router.patch("/admin/employees/{employee_id}")
 async def update_employee(employee_id: int, data: EmployeeUpdateIn, employee=Depends(require_admin)) -> dict:
-    """Обновить сотрудника: активность, роль, telegram_id."""
+    """Обновить сотрудника: активность, роль, telegram_id, telegram_username."""
     emp = await crud.get_employee_by_id(employee_id)
     if not emp:
         raise HTTPException(status_code=404, detail="Сотрудник не найден")
@@ -91,6 +96,8 @@ async def update_employee(employee_id: int, data: EmployeeUpdateIn, employee=Dep
         await crud.set_employee_role(employee_id, data.role)
     if data.telegram_id is not None:
         await crud.update_employee_telegram_id(employee_id, data.telegram_id)
+    if data.telegram_username is not None:
+        await crud.update_employee_telegram_username(employee_id, data.telegram_username)
     emp = await crud.get_employee_by_id(employee_id)
     return {"employee": _to_out(emp)}
 

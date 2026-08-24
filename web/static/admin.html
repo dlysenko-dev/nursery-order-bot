@@ -242,12 +242,12 @@ table.ov-orders td,table.ov-orders th{padding:8px 10px;font-size:12px}
       <table>
         <thead>
           <tr>
-            <th>Имя</th><th>Логин</th><th>Telegram ID</th><th>Роль</th><th>Статус</th>
+            <th>Имя</th><th>Логин</th><th>Telegram @username</th><th>Telegram ID</th><th>Роль</th><th>Статус</th>
             <th>Последний вход</th><th>Создан</th><th>Действия</th>
           </tr>
         </thead>
         <tbody id="empBody">
-          <tr><td colspan="8" class="empty">Загрузка…</td></tr>
+          <tr><td colspan="9" class="empty">Загрузка…</td></tr>
         </tbody>
       </table>
     </div>
@@ -273,6 +273,11 @@ table.ov-orders td,table.ov-orders th{padding:8px 10px;font-size:12px}
         <label for="fTg">Telegram ID (необязательно)</label>
         <input id="fTg" type="text" inputmode="numeric" autocomplete="off">
         <div class="field-err" data-err="fTg"></div>
+      </div>
+      <div>
+        <label for="fTgUsername">Telegram @username (необязательно)</label>
+        <input id="fTgUsername" type="text" autocomplete="off" placeholder="username без @">
+        <div class="field-err" data-err="fTgUsername"></div>
       </div>
       <div>
         <label for="fRole">Роль</label>
@@ -506,7 +511,7 @@ function loadEmployees(){
 function renderEmployees(){
   var body = $('empBody');
   if (!employees.length) {
-    body.innerHTML = '<tr><td colspan="8" class="empty">Сотрудников пока нет</td></tr>';
+    body.innerHTML = '<tr><td colspan="9" class="empty">Сотрудников пока нет</td></tr>';
     return;
   }
   body.innerHTML = employees.map(function(e){
@@ -521,6 +526,7 @@ function renderEmployees(){
     return '<tr>' +
       '<td><b>' + esc(e.name) + '</b></td>' +
       '<td>' + esc(e.username || '—') + '</td>' +
+      '<td>' + (e.telegram_username ? '<span class="muted">@</span>' + esc(e.telegram_username) : '<span class="muted">—</span>') + '</td>' +
       '<td>' + (e.telegram_id != null ? esc(e.telegram_id) : '<span class="muted">—</span>') + '</td>' +
       '<td>' + roleBadge + '</td>' +
       '<td>' + statusBadge + '</td>' +
@@ -528,6 +534,7 @@ function renderEmployees(){
       '<td>' + (e.created_at ? esc(e.created_at) : '<span class="muted">—</span>') + '</td>' +
       '<td><div class="actions">' +
         '<button class="act' + (e.is_active ? ' act--danger' : '') + '" data-action="toggle" data-id="' + e.id + '">' + toggleLabel + '</button>' +
+        '<button class="act" data-action="tgusername" data-id="' + e.id + '">Telegram @</button>' +
         '<button class="act" data-action="reset" data-id="' + e.id + '">Сбросить пароль</button>' +
         '<button class="act" data-action="secret" data-id="' + e.id + '">Новая ссылка</button>' +
         '<button class="act" data-action="role" data-id="' + e.id + '">' + roleLabel + '</button>' +
@@ -580,6 +587,15 @@ document.addEventListener('click', function(e){
       .then(function(){ toast('Роль обновлена'); loadEmployees(); })
       .catch(showErr);
   }
+  if (action === 'tgusername') {
+    var current = emp.telegram_username ? '@' + emp.telegram_username : '';
+    var value = window.prompt('Telegram @username для «' + emp.name + '» (оставьте пустым чтобы удалить):', current);
+    if (value === null) return;
+    value = value.replace(/^@/, '').trim();
+    api('/api/admin/employees/' + id, {method: 'PATCH', body: {telegram_username: value || null}})
+      .then(function(){ toast('Telegram username обновлён'); loadEmployees(); })
+      .catch(showErr);
+  }
 });
 
 function showErr(err){
@@ -598,12 +614,13 @@ function setErr(field, msg){
 
 $('createForm').addEventListener('submit', function(e){
   e.preventDefault();
-  ['fName','fUser','fPass','fTg'].forEach(function(f){ setErr(f, ''); });
+  ['fName','fUser','fPass','fTg','fTgUsername'].forEach(function(f){ setErr(f, ''); });
 
   var name = $('fName').value.trim();
   var username = $('fUser').value.trim();
   var password = $('fPass').value;
   var tgRaw = $('fTg').value.trim();
+  var tgUsernameRaw = $('fTgUsername').value.trim();
   var role = $('fRole').value;
 
   var ok = true;
@@ -615,12 +632,14 @@ $('createForm').addEventListener('submit', function(e){
     if (!/^\d+$/.test(tgRaw)) { setErr('fTg', 'Только цифры'); ok = false; }
     else telegram_id = Number(tgRaw);
   }
+  var telegram_username = tgUsernameRaw ? tgUsernameRaw.replace(/^@/, '') : null;
+  if (telegram_username && telegram_username.length < 3) { setErr('fTgUsername', 'Минимум 3 символа'); ok = false; }
   if (!ok) return;
 
   $('createBtn').disabled = true;
   api('/api/admin/employees', {
     method: 'POST',
-    body: {name: name, username: username, password: password, telegram_id: telegram_id, role: role}
+    body: {name: name, username: username, password: password, telegram_id: telegram_id, telegram_username: telegram_username, role: role}
   }).then(function(data){
     var emp = data.employee;
     showModal(
