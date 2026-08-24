@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import io
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -139,7 +139,7 @@ class TrackVisitIn(BaseModel):
 
 
 @router.post("/track/visit")
-async def track_visit(data: TrackVisitIn, request) -> dict:
+async def track_visit(data: TrackVisitIn, request: Request) -> dict:
     """Фиксирует переход по реферальной ссылке (для статистики).
 
     Дополнительно ставит cookie ref_code — страховка на случай, если у клиента
