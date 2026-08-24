@@ -45,11 +45,17 @@ def _validate_customer(data: OrderIn) -> list[str]:
 
 
 async def _notify_admins(order, source: str) -> None:
-    """Повторяет паттерн handlers/checkout.py: текст заказа админам + Excel-выгрузка."""
-    if not BOT_TOKEN or not ADMIN_IDS:
+    """Текст заказа админам и менеджерам + Excel-выгрузка админам."""
+    if not BOT_TOKEN:
         return
     try:
         from aiogram import Bot
+
+        from db.crud import get_responsible_notify_ids
+
+        notify_ids = await get_responsible_notify_ids(order.user_id)
+        if not notify_ids:
+            return
 
         lines = [
             f"🔔 <b>Новый заказ №{order.id}</b> ({'Mini App' if source == 'miniapp' else 'сайт'})\n",
@@ -74,7 +80,7 @@ async def _notify_admins(order, source: str) -> None:
         ]
         bot = Bot(token=BOT_TOKEN)
         try:
-            for admin_id in ADMIN_IDS:
+            for admin_id in notify_ids:
                 try:
                     await bot.send_message(admin_id, "\n".join(lines), parse_mode="HTML")
                 except Exception:

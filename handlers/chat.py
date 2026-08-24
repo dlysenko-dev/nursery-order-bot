@@ -8,7 +8,6 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from config import ADMIN_IDS
 from db import crud
 from states.states import ChatStates
 
@@ -32,7 +31,7 @@ async def notify_managers_about_message(bot: Bot, user, text: str, source: str) 
         f"От: {name}\nTelegram: {username}\nТелефон: {user.phone or '—'}\n\n"
         f"{text}"
     )
-    for admin_id in ADMIN_IDS:
+    for admin_id in await crud.get_responsible_notify_ids(user.id):
         try:
             await bot.send_message(admin_id, body, reply_markup=manager_reply_kb(user.id), parse_mode="HTML")
         except Exception:

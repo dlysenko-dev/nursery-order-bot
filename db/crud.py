@@ -423,6 +423,41 @@ async def list_employees() -> list[Employee]:
         return list(result.scalars().all())
 
 
+async def is_staff(telegram_id: int) -> bool:
+    """True, если это админ из ADMIN_IDS или активный сотрудник с telegram_id."""
+    from config import ADMIN_IDS
+
+    if telegram_id in ADMIN_IDS:
+        return True
+    async with AsyncSessionLocal() as s:
+        result = await s.execute(
+            select(Employee.id).where(
+                Employee.telegram_id == telegram_id,
+                Employee.is_active.is_(True),
+            )
+        )
+        return result.first() is not None
+
+
+async def get_responsible_notify_ids(user_id: int | None) -> list[int]:
+    """Кому слать уведомления по этому клиенту (заказ/оплата/сообщение).
+
+    Только менеджер, за которым клиент закреплён (пришёл по его реф-ссылке),
+    независимо от роли — admin или manager. Если клиент ни за кем не закреплён
+    или у менеджера нет telegram_id — уведомление уходит админам из ADMIN_IDS.
+    """
+    from config import ADMIN_IDS
+
+    if user_id:
+        async with AsyncSessionLocal() as s:
+            user = await s.get(User, user_id)
+            if user and user.employee_id:
+                emp = await s.get(Employee, user.employee_id)
+                if emp and emp.is_active and emp.telegram_id:
+                    return [emp.telegram_id]
+    return list(ADMIN_IDS)
+
+
 async def assign_employee_to_user(user_id: int, employee_id: int) -> None:
     """Привязывает клиента к сотруднику, если ещё не привязан (первый источник побеждает)."""
     async with AsyncSessionLocal() as s:

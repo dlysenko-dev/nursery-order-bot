@@ -107,12 +107,16 @@ async def client_send_message(site_token: str, data: ChatMessageIn) -> dict:
 
 
 async def _notify_managers(user, text: str, order_id: int | None = None) -> None:
-    """Уведомление менеджерам в Telegram с кнопкой «Ответить»."""
-    if not BOT_TOKEN or not ADMIN_IDS:
+    """Уведомление админам и менеджерам в Telegram с кнопкой «Ответить»."""
+    if not BOT_TOKEN:
         return
     try:
         from aiogram import Bot
         from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
+        notify_ids = await crud.get_responsible_notify_ids(user.id)
+        if not notify_ids:
+            return
 
         name = html.escape(user.full_name or "Клиент сайта")
         phone = html.escape(user.phone or "—")
@@ -127,7 +131,7 @@ async def _notify_managers(user, text: str, order_id: int | None = None) -> None
         ]])
         bot = Bot(token=BOT_TOKEN)
         try:
-            for admin_id in ADMIN_IDS:
+            for admin_id in notify_ids:
                 try:
                     await bot.send_message(admin_id, body, reply_markup=kb, parse_mode="HTML")
                 except Exception as exc:

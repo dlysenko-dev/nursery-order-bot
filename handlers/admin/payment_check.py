@@ -2,11 +2,11 @@ from aiogram import Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import StateFilter
 from aiogram.types import CallbackQuery, Message
-from config import ADMIN_IDS
 from db.crud import (
     approve_payment_for_order,
     reject_payment_for_order,
     get_order_by_id,
+    is_staff,
     update_order_status,
     set_admin_comment,
 )
@@ -18,12 +18,9 @@ from services.sheets import update_order_status_in_sheets
 
 router = Router()
 
-def _is_admin(user_id: int) -> bool:
-    return user_id in ADMIN_IDS
-
 @router.callback_query(F.data.startswith("confirm_payment_"))
 async def confirm_payment(callback: CallbackQuery, bot: Bot) -> None:
-    if not _is_admin(callback.from_user.id):
+    if not await is_staff(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
     order_id = int(callback.data.replace("confirm_payment_", ""))
@@ -65,7 +62,7 @@ async def confirm_payment(callback: CallbackQuery, bot: Bot) -> None:
 
 @router.callback_query(F.data.startswith("reject_payment_"))
 async def reject_payment(callback: CallbackQuery, state: FSMContext) -> None:
-    if not _is_admin(callback.from_user.id):
+    if not await is_staff(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
     order_id = int(callback.data.replace("reject_payment_", ""))
@@ -76,7 +73,7 @@ async def reject_payment(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.message(StateFilter(AdminStates.waiting_rejection_comment))
 async def process_rejection_comment(message: Message, state: FSMContext, bot: Bot) -> None:
-    if not _is_admin(message.from_user.id):
+    if not await is_staff(message.from_user.id):
         return
     data = await state.get_data()
     order_id = data["order_id"]
@@ -105,7 +102,7 @@ async def process_rejection_comment(message: Message, state: FSMContext, bot: Bo
 
 @router.callback_query(F.data.startswith("msg_client_"))
 async def msg_client_prompt(callback: CallbackQuery) -> None:
-    if not _is_admin(callback.from_user.id):
+    if not await is_staff(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
     order_id = callback.data.replace("msg_client_", "")
@@ -115,7 +112,7 @@ async def msg_client_prompt(callback: CallbackQuery) -> None:
 
 @router.callback_query(F.data == "admin_payments")
 async def show_pending_payments(callback: CallbackQuery) -> None:
-    if not _is_admin(callback.from_user.id):
+    if not await is_staff(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
     from db.crud import get_orders_list

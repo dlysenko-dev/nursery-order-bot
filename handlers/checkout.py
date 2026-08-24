@@ -156,7 +156,7 @@ async def _show_preview(message: Message, state: FSMContext) -> None:
 @router.callback_query(F.data == "confirm_order", StateFilter(CheckoutStates.confirming_order))
 async def confirm_order(callback: CallbackQuery, state: FSMContext) -> None:
     from aiogram import Bot
-    from config import ADMIN_IDS
+    from db.crud import get_responsible_notify_ids
     data = await state.get_data()
     order_id = data["order_id"]
     order = await get_order_by_id(order_id)
@@ -191,7 +191,7 @@ async def confirm_order(callback: CallbackQuery, state: FSMContext) -> None:
         f"Статус: ожидается оплата"
     )
     bot: Bot = callback.bot
-    for admin_id in ADMIN_IDS:
+    for admin_id in await get_responsible_notify_ids(order.user_id):
         try:
             await bot.send_message(admin_id, admin_text, parse_mode="HTML")
         except Exception:

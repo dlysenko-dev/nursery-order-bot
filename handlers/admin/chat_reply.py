@@ -12,7 +12,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from config import ADMIN_IDS, WEBAPP_URL
+from config import WEBAPP_URL
 from db import crud
 from states.states import ChatStates
 
@@ -23,7 +23,7 @@ MAX_MESSAGE_LEN = 2000
 
 @router.callback_query(F.data.startswith("chat_reply_"))
 async def chat_reply_start(callback: CallbackQuery, state: FSMContext) -> None:
-    if callback.from_user.id not in ADMIN_IDS:
+    if not await crud.is_staff(callback.from_user.id):
         await callback.answer("Доступ запрещён", show_alert=True)
         return
     user_id = int(callback.data.replace("chat_reply_", ""))
@@ -44,7 +44,7 @@ async def chat_reply_start(callback: CallbackQuery, state: FSMContext) -> None:
 
 @router.message(StateFilter(ChatStates.manager_replying), F.text)
 async def chat_reply_message(message: Message, state: FSMContext, bot: Bot) -> None:
-    if message.from_user.id not in ADMIN_IDS:
+    if not await crud.is_staff(message.from_user.id):
         return
     if message.text.strip().startswith("/cancel"):
         await state.clear()
