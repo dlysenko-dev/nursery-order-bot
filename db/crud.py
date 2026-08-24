@@ -684,6 +684,7 @@ async def create_employee_with_auth(
     username: str,
     password_hash: str,
     telegram_id: int | None = None,
+    telegram_username: str | None = None,
     role: str = "manager",
     secret_token: str | None = None,
 ) -> Employee:
@@ -699,6 +700,7 @@ async def create_employee_with_auth(
         emp = Employee(
             name=name,
             username=username,
+            telegram_username=_clean_tg_username(telegram_username),
             password_hash=password_hash,
             telegram_id=telegram_id,
             ref_code=ref_code,
@@ -709,6 +711,22 @@ async def create_employee_with_auth(
         await s.commit()
         await s.refresh(emp)
         return emp
+
+
+def _clean_tg_username(value: str | None) -> str | None:
+    """Приводит Telegram-username к виду без @."""
+    if not value:
+        return None
+    v = value.strip().lstrip("@")
+    return v if v else None
+
+
+async def update_employee_telegram_username(employee_id: int, telegram_username: str | None) -> None:
+    async with AsyncSessionLocal() as s:
+        await s.execute(
+            update(Employee).where(Employee.id == employee_id).values(telegram_username=_clean_tg_username(telegram_username))
+        )
+        await s.commit()
 
 
 # ---------- Веб-заказы (Mini App / сайт) ----------
