@@ -140,7 +140,15 @@ class TrackVisitIn(BaseModel):
 
 @router.post("/track/visit")
 async def track_visit(data: TrackVisitIn, request) -> dict:
-    """Фиксирует переход по реферальной ссылке (для статистики)."""
+    """Фиксирует переход по реферальной ссылке (для статистики).
+
+    Дополнительно ставит cookie ref_code — страховка на случай, если у клиента
+    не работает localStorage (in-app браузеры, строгий инкогнито): при заказе
+    бэкенд прочитает ref из cookie. «Первый источник побеждает»: уже
+    установленную cookie не перезаписываем.
+    """
+    from fastapi.responses import JSONResponse
+
     employee = await crud.get_employee_by_ref_code(data.ref_code.strip())
     if not employee:
         return {"ok": False}
@@ -150,4 +158,7 @@ async def track_visit(data: TrackVisitIn, request) -> dict:
         user_agent=request.headers.get("user-agent"),
         ip=request.client.host if request.client else None,
     )
-    return {"ok": True}
+    resp = JSONResponse({"ok": True})
+    if not request.cookies.get("ref_code"):
+        resp.set_cookie("ref_code", employee.ref_code, max_age=90 * 24 * 3600, samesite="lax")
+    return resp

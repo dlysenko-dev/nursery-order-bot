@@ -4,7 +4,7 @@ from __future__ import annotations
 import html
 import re
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from config import ADMIN_IDS, BOT_TOKEN, DEFAULT_PAYMENT_REQUISITES, WEBAPP_URL
@@ -95,7 +95,7 @@ async def _notify_admins(order, source: str) -> None:
 
 
 @router.post("/orders")
-async def create_order(data: OrderIn) -> dict:
+async def create_order(data: OrderIn, request: Request) -> dict:
     problems = _validate_customer(data)
     if problems:
         raise HTTPException(status_code=400, detail=problems)
@@ -116,9 +116,13 @@ async def create_order(data: OrderIn) -> dict:
         user = await crud.get_or_create_site_user(data.phone.strip(), data.full_name.strip(), source="site")
         source = "site"
 
+    # Реф-метка: из тела запроса, а если фронт её не передал — из cookie,
+    # которую ставит /api/track/visit при переходе по ссылке менеджера
+    ref_code = (data.ref_code or "").strip() or request.cookies.get("ref_code", "").strip()
+
     employee = None
-    if data.ref_code:
-        employee = await crud.get_employee_by_ref_code(data.ref_code.strip())
+    if ref_code:
+        employee = await crud.get_employee_by_ref_code(ref_code)
         if employee:
             await crud.assign_employee_to_user(user.id, employee.id)
             await crud.log_referral_event(employee_id=employee.id, source=source, user_id=user.id)

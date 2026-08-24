@@ -1462,7 +1462,7 @@ $('#submitOrderBtn').addEventListener('click', function(){
 
   var body = {items: items, full_name: name, phone: phone, city: city,
               pickup_point: point, comment: comment || null};
-  try { var rc = localStorage.getItem('ref_code'); if (rc) body.ref_code = rc; } catch(e){}
+  try { var rc = getRef(); if (rc) body.ref_code = rc; } catch(e){}
   try { var st = localStorage.getItem('site_token') || getCookieSiteToken(); if (st) body.site_token = st; } catch(e){}
   if (tg && tg.initData) body.init_data = tg.initData;
 
@@ -1705,27 +1705,36 @@ fetch('/api/config')
   .catch(function(){});
 
 /* ---------- Реферальный код сотрудника ---------- */
+function setRefCookie(code){
+  try { document.cookie = 'ref_code=' + encodeURIComponent(code) + '; max-age=' + (90*24*3600) + '; path=/; samesite=lax'; } catch(e){}
+}
+function getRefCookie(){
+  var m = /(?:^|;\s*)ref_code=([^;]+)/.exec(document.cookie || '');
+  return m ? decodeURIComponent(m[1]) : '';
+}
+function getRef(){
+  try { var rc = localStorage.getItem('ref_code'); if (rc) return rc; } catch(e){}
+  return getRefCookie();
+}
 function captureRef(){
-  try {
-    if (localStorage.getItem('ref_code')) return; /* первый источник побеждает */
-    var code = '';
-    var m = /[?&]ref=([^&]+)/.exec(location.search);
-    if (m) code = decodeURIComponent(m[1]);
-    var source = 'site';
-    if (!code && tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
-      var sp = String(tg.initDataUnsafe.start_param);
-      if (sp.indexOf('ref_') === 0) { code = sp.slice(4); source = 'miniapp'; }
-    }
-    if (code) {
-      localStorage.setItem('ref_code', code);
-      /* фиксируем переход для статистики менеджера */
-      fetch('/api/track/visit', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ref_code: code, source: source})
-      }).catch(function(){});
-    }
-  } catch(e){}
+  if (getRef()) return; /* первый источник побеждает */
+  var code = '';
+  var m = /[?&]ref=([^&]+)/.exec(location.search);
+  if (m) code = decodeURIComponent(m[1]);
+  var source = 'site';
+  if (!code && tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+    var sp = String(tg.initDataUnsafe.start_param);
+    if (sp.indexOf('ref_') === 0) { code = sp.slice(4); source = 'miniapp'; }
+  }
+  if (!code) return;
+  try { localStorage.setItem('ref_code', code); } catch(e){}
+  setRefCookie(code);
+  /* фиксируем переход для статистики менеджера */
+  fetch('/api/track/visit', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ref_code: code, source: source})
+  }).catch(function(){});
 }
 captureRef(); /* URL-параметр */
 
